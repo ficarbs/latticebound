@@ -86,7 +86,8 @@ export const SPECIES = {
   magmander: { name: 'Magmander', learn: 'flamefang' },
   wispurr: S('Wispurr', 'shade', [34, 24, 11, 7, 12], 'phantigre', 'A cat-shaped draught. Purrs like a far-off bell.'),
   phantigre: { name: 'Phantigre', learn: 'hex' },
-  nullmaw: { name: 'Nullmaw', el: 'shade', b: [180, 80, 29, 22, 15], stage: 3, innate: ['duskclaw', 'hex', 'eclipse', 'unnerve'], blurb: 'A hole in the Lattice that learned to bite.' },
+  nullmaw: { name: 'Nullmaw', el: 'shade', b: [180, 80, 29, 22, 15], stage: 3, raw: true, innate: ['duskclaw', 'hex', 'eclipse', 'unnerve'], blurb: 'A hole in the Lattice that learned to bite.' },
+  unlit: { name: 'The Unlit', el: 'shade', b: [200, 100, 30, 24, 16], stage: 3, raw: true, innate: ['eclipse', 'inferno', 'thunderhead', 'maelstrom'], blurb: 'What the Lattice looked like before anything lit it.' },
 };
 SPECIES.flarevane.to = 'solkharn';
 SPECIES.brinelle.to = 'maelorca';
@@ -105,14 +106,72 @@ for (const id in SPECIES) {
       n.blurb = n.blurb || `The ascended form of ${prev.name}.`;
       prev = n; m = 2;
     }
-  } else if (id === 'nullmaw') s.innate = ['strike', ...s.innate];
+  } else if (s.raw) s.innate = ['strike', ...s.innate];
 }
+const STATS = { hp: 'HP', en: 'EN', atk: 'ATK', def: 'DEF', spd: 'SPD' };
+// Every family ascends its own way. The Ascension node is where it happens; the rite is what makes it possible.
+const SEA = { t: 'place', maps: ['brine', 'marsh'], text: 'Stand by the sea: Brinecliff or Saltmarsh' };
+const FIRE = { t: 'place', maps: ['cinder', 'ashpass'], text: 'Stand on volcanic ground: Cindermere or Ashen Pass' };
+const RITES = {
+  embrit: { t: 'lv', n: 10, text: 'Reach Lv 10' },
+  flarevane: { t: 'bursts', n: 3, text: 'Unleash 3 Sync Bursts' },
+  puddlop: { t: 'stat', s: 'hp', n: 74, text: 'Raise max HP to 74' },
+  brinelle: SEA,
+  sprigit: { t: 'nodes', n: 12, text: 'Light 12 Lattice nodes' },
+  brambuck: { t: 'cross', text: 'Learn a skill from another element\'s arm' },
+  voltick: { t: 'stat', s: 'spd', n: 21, text: 'Raise SPD to 21' },
+  pebblit: { t: 'stat', s: 'def', n: 21, text: 'Raise DEF to 21' },
+  murklet: { t: 'wins', n: 10, text: 'Win 10 battles as the Kith in play' },
+  mossnip: { t: 'ally', el: 'tide', text: 'Travel with a Tide Kith in the party' },
+  gillby: { t: 'lv', n: 14, text: 'Reach Lv 14' },
+  coalcub: FIRE,
+  wispurr: { t: 'skills', n: 4, text: 'Know 4 skills' },
+};
+for (const id in RITES) SPECIES[id].rite = RITES[id];
+SPECIES.nullmaw.learn = 'eclipse';
+
+// Form Charts. Every family has its own chart of seven forms over four tiers. Forms are shared between
+// families but reached by different routes: levels earned in earlier forms, stats, and each family's rite.
+// [kin A, stat it wants, kin B, stat it wants, first apex form, second apex form]
+const KIN = {
+  embrit: ['magmander', 'atk', 'phantigre', 'spd', 'solkharn', 'eldergrove'],
+  puddlop: ['finfathom', 'hp', 'sporelord', 'en', 'maelorca', 'solkharn'],
+  sprigit: ['sporelord', 'hp', 'stagvolt', 'spd', 'eldergrove', 'maelorca'],
+  voltick: ['noxwing', 'spd', 'flarevane', 'atk', 'solkharn', 'maelorca'],
+  pebblit: ['magmander', 'def', 'brambuck', 'hp', 'eldergrove', 'solkharn'],
+  murklet: ['phantigre', 'atk', 'stagvolt', 'spd', 'maelorca', 'eldergrove'],
+  mossnip: ['brambuck', 'hp', 'cragnaw', 'def', 'eldergrove', 'solkharn'],
+  gillby: ['brinelle', 'en', 'noxwing', 'spd', 'maelorca', 'eldergrove'],
+  coalcub: ['flarevane', 'atk', 'cragnaw', 'def', 'solkharn', 'maelorca'],
+  wispurr: ['noxwing', 'spd', 'brinelle', 'en', 'maelorca', 'solkharn'],
+};
+const WANT = { hp: 105, en: 38, atk: 26, def: 24, spd: 24 };
+export const CHARTS = {};
+for (const base in KIN) {
+  const [ka, sa, kb, sb, t3a, t3b] = KIN[base], own = SPECIES[base].to;
+  const stat = s => ({ t: 'stat', s, n: WANT[s], text: `${STATS[s]} ${WANT[s]}+` });
+  const form = (f, n) => ({ t: 'form', f, n, text: `${SPECIES[f].name} form Lv ${n}` });
+  const rows = [
+    { form: own, tier: 1, need: [RITES[base]] },
+    { form: ka, tier: 1, need: [{ t: 'lv', n: 16, text: 'Reach Lv 16' }, stat(sa)] },
+    { form: kb, tier: 1, need: [form(own, 6), stat(sb)] },
+    { form: t3a, tier: 2, need: [form(own, 12), form(ka, 6), ...(RITES[own] && SPECIES[own].to === t3a ? [RITES[own]] : [])] },
+    { form: t3b, tier: 2, need: [form(kb, 10), form(t3a, 8)] },
+    { form: 'nullmaw', tier: 3, need: [form(t3a, 20), form(t3b, 15), { t: 'lv', n: 80, text: 'Reach Lv 80' }] },
+  ];
+  // a family never lists the same form twice
+  CHARTS[base] = rows.filter((r, i) => rows.findIndex(q => q.form === r.form) === i);
+}
+export const MAX_LV = 100;
+
 export const STARTERS = ['embrit', 'puddlop', 'sprigit'];
 
 export const ITEMS = {
   tonic: { name: 'Tonic', heal: 40, price: 30, desc: 'Restores 40 HP to one Kith.' },
   tonicx: { name: 'Rich Tonic', heal: 120, price: 90, desc: 'Restores 120 HP to one Kith.' },
+  elixir: { name: 'Elixir', heal: 450, price: 420, desc: 'Restores 450 HP to one Kith.' },
   ether: { name: 'Ether Drop', en: 25, price: 60, desc: 'Restores 25 EN to one Kith.' },
+  etherx: { name: 'Ether Flask', en: 90, price: 280, desc: 'Restores 90 EN to one Kith.' },
   rekindle: { name: 'Rekindle', revive: 0.5, price: 150, desc: 'Revives a fainted Kith with half HP.' },
   seal: { name: 'Bind Seal', bind: 0, price: 40, desc: 'Binds a weakened wild Kith to you.' },
   sealx: { name: 'Deep Seal', bind: 0.25, price: 120, desc: 'A stronger seal for stubborn Kith.' },

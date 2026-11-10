@@ -1,11 +1,12 @@
 // NPC, door and boss scripts. Each runs with world input locked.
 import { G, flag, setFlag, wipe, sleep } from './state.js';
 import { SPECIES, ITEMS, STARTERS, EL } from './data.js';
-import { makeKith, healAll, give, addKith } from './kith.js';
+import { makeKith, healAll, give, addKith, statsOf } from './kith.js';
 import { sfx } from './audio.js';
 import { say, choose, toast, starterSelect, shopScreen, ending } from './ui.js';
 import { startBattle } from './battle.js';
 import { W } from './world.js';
+import { travelMenu } from './ui.js';
 import { saveGame } from './save.js';
 
 async function gift(id, n, who) {
@@ -46,12 +47,14 @@ const SCRIPTS = {
       saveGame();
       return;
     }
-    if (flag('clear')) return say('The hum is clean again. You did that. The Lattice still has far corners no Kith of yours has walked, though.', who);
-    if (flag('maris')) return say('Key II opens the deep locks, and past them the last skills and the second Ascension. The Spire waits beyond Saltmarsh.', who);
+    if (flag('unlit')) return say('You went all the way down. I have studied the Lattice for forty years and I do not know what you are any more. Thank you.', who);
+    if (flag('clear')) return say('The hum is clean again, but the Spire has a stair now, going down. The Hollow Deep. Whatever fed the Nullmaw is at the bottom, and it will take Kith near Lv 100 to face it.', who);
+    if (flag('yuna')) return say('Four Wardens, four Waygates. The Spire is all that is left. Finish it.', who);
+    if (flag('maris')) return say('Key II opens the deep locks, and past them the last skills and the second Ascension. East of Saltmarsh lie Cindermere and Galehaven. Their Wardens guard the road to the Spire.', who);
     if (flag('key1')) return say('Lattice Key I! Take it to a ring lock between two arms. Cross it and your Kith can learn another element entirely. Brinecliff lies north.', who);
     const sparks = G.p.party.reduce((s, k) => s + k.sparks, 0);
     if (sparks) return say(`You are carrying ${sparks} unspent Spark${sparks > 1 ? 's' : ''}. Menu, then Lattice. Unlit nodes do nobody any good.`, who);
-    await say('Ascension nodes sit eight steps out on every arm. A Kith that reaches one at Lv 10 takes its next form.', who);
+    await say('Ascension nodes sit eight steps out on every arm. But every family ascends its own way: one by level, one by the sea, one by keeping the right company. Open a Kith\'s Form Chart from the menu to see every form its family can reach.', who);
   },
 
   async mender() {
@@ -70,6 +73,64 @@ const SCRIPTS = {
     await say(t.before, n.name);
     const r = await startBattle({ foes: t.party.map(([s, l]) => makeKith(s, l)), kind: 'trainer', name: n.name, gold: t.gold });
     if (r === 'win') { setFlag(key); await say(t.after, n.name); }
+  },
+
+  async shop3() { await say('Mountain prices, mountain quality.', 'Trader'); await shopScreen(['tonicx', 'elixir', 'ether', 'etherx', 'sealx', 'rekindle', 'shard']); },
+  async waygate() {
+    await say('A Waygate. The Lattice surfaces here, close enough to step into.');
+    await travelMenu();
+  },
+  async rift2() { await say('Static chokes the mouth of the pass. Warden Kael keeps Cindermere, and the pass with it.'); },
+  async gate2() { await say('The Spire road is barred with static. Warden Yuna of Galehaven decides who walks it.'); },
+
+  async kael(n) {
+    const who = n.name;
+    if (flag('kael')) return say('The pass is open. Mind the lava, mind Yuna, and mind whatever lives in that tower.', who);
+    await say('Maris sent you, then. She tests whether you can hold a Key. I test whether you can take a hit.', who);
+    if ((await choose(['Try me', 'Not yet'], { prompt: 'Face the Warden of Cindermere?', name: who })) !== 0) return;
+    const r = await startBattle({ foes: [makeKith('magmander', 21), makeKith('cragnaw', 22), makeKith('flarevane', 23)], kind: 'trainer', name: who, gold: 800 });
+    if (r !== 'win') return;
+    setFlag('kael');
+    await say('Hah! Still standing. Good. The pass will not stop you now.', who);
+    await gift('shard', 2, who);
+    await gift('elixir', 3, who);
+    saveGame();
+  },
+  async yuna(n) {
+    const who = n.name;
+    if (flag('yuna')) return say('The Spire gate is open. I have watched that tower grow for a year. Go and end it.', who);
+    await say('Three Wardens let you pass. I am the last door, and I am the one that stays shut.', who);
+    if ((await choose(['Open it', 'Not yet'], { prompt: 'Face the Warden of Galehaven?', name: who })) !== 0) return;
+    const r = await startBattle({ foes: [makeKith('stagvolt', 26), makeKith('phantigre', 26), makeKith('noxwing', 27), makeKith('solkharn', 28)], kind: 'trainer', name: who, gold: 1200 });
+    if (r !== 'win') return;
+    setFlag('yuna');
+    await say('...Then it opens. Take these. You will want every Spark you can get.', who);
+    await gift('shard', 3, who);
+    await gift('rekindle', 2, who);
+    saveGame();
+  },
+
+  async guardian(n) {
+    const g = n.g, last = n.floor === 24;
+    await say(last ? 'The stair ends. There is no floor here, only something vast and pale that was here before the Lattice had light in it.' : `${g.name} bars the stair down. The static around it is thick enough to lean on.`);
+    if ((await choose(['Fight', 'Step back'], { prompt: last ? 'This is the bottom of everything.' : 'There is a font and a Waygate behind you.' })) !== 0) return;
+    const foes = g.party.map(([sp, lv]) => {
+      const k = makeKith(sp, lv);
+      if (g.party.length === 1) k.name = g.name;
+      if (g.fix) { k.fix = g.fix; k.hp = g.fix.hp; k.en = g.fix.en; k.boss = 1; }
+      else if (g.boss) { k.boss = g.boss; k.hp = statsOf(k).hp; }
+      if (g.traits) k.traits = g.traits;
+      return k;
+    });
+    const r = await startBattle({ foes, kind: g.party.length > 1 ? 'trainer' : 'boss', name: g.name, gold: n.floor * 400 });
+    if (r !== 'win') return;
+    setFlag('dg' + n.floor);
+    await gift('shard', last ? 10 : 3);
+    saveGame();
+    if (!last) return say(`The way down is clear. Floor ${n.floor} is now a Waygate stop: Travel will bring you back here.`);
+    setFlag('unlit');
+    await say('The Unlit comes apart like frost in the sun. Under it, the oldest node in the world catches, and burns steady.');
+    await ending(true);
   },
 
   async rift() { await say('A wall of static crackles across the road. It tastes of the Grotto. Whatever feeds it is still in there.'); },
@@ -91,7 +152,7 @@ const SCRIPTS = {
 
   async maris(n) {
     const who = n.name;
-    if (flag('maris')) return say('The gate past Saltmarsh will open for you now. Whatever sits at the top of that Spire, it is eating the Lattice from the far end.', who);
+    if (flag('maris')) return say('The gate past Saltmarsh will open for you now. Kael holds Cindermere and Yuna holds Galehaven. Neither will wave you through.', who);
     await say('So the vale finally sent someone. I keep the second Key, and I do not hand it to Tamers who cannot hold it.', who);
     if ((await choose(['I\'m ready', 'Not yet'], { prompt: 'Face the Warden of Brinecliff?', name: who })) !== 0) return;
     const r = await startBattle({ foes: [makeKith('gillby', 13), makeKith('noxwing', 14), makeKith('finfathom', 16)], kind: 'trainer', name: who, gold: 500 });
@@ -100,7 +161,7 @@ const SCRIPTS = {
     await say('Ha! The tide goes out for you. Take it.', who);
     await gift('key2', 1, who);
     await gift('shard', 2, who);
-    await say('Key II opens the deep locks, far out on every arm. And the static gate east of Saltmarsh answers to it too.', who);
+    await say('Key II opens the deep locks, far out on every arm. And the static gate east of Saltmarsh answers to it too. Cindermere is beyond.', who);
     saveGame();
   },
 
@@ -128,8 +189,8 @@ const SCRIPTS = {
   async nullmaw() {
     await say('At the top of the Spire the Lattice simply stops. In the gap, something opens far too many teeth.');
     if ((await choose(['Step forward', 'Not yet'], { prompt: 'There is no way around it.' })) !== 0) return;
-    const boss = makeKith('nullmaw', 24);
-    boss.boss = 1.8; boss.hp = Math.round(boss.hp * 1.8);
+    const boss = makeKith('nullmaw', 34);
+    boss.fix = { hp: 620, en: 120, atk: 42, def: 32, spd: 24 }; boss.boss = 1; boss.hp = 620; boss.en = 120; boss.traits = { enrage: 0.35 };
     const r = await startBattle({ foes: [boss], kind: 'boss', name: 'Nullmaw', gold: 2000 });
     if (r !== 'win') return;
     setFlag('clear');
@@ -137,7 +198,6 @@ const SCRIPTS = {
     await gift('shard', 5);
     saveGame();
     await ending();
-    toast('The Lattice is whole. Thanks for playing!');
   },
 };
 

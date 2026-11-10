@@ -16,6 +16,10 @@ export function hasSave() {
 export function loadSave() {
   try {
     const p = JSON.parse(localStorage.getItem(KEY));
-    return p && p.party ? { ...newPlayer(), ...p } : null;
+    if (!p || !p.party) return null;
+    const f = p.flags || (p.flags = {});
+    if (f.starter) f.v_hearth = 1;
+    if (f.maris || f.gift) f.v_brine = 1;
+    return { ...newPlayer(), ...p };
   } catch (e) { return null; }
 }

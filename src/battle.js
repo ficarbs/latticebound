@@ -2,7 +2,7 @@
 import { G, tween, sleep, wipe, ease, clamp, pick } from './state.js';
 import { hit } from './input.js';
 import { SPECIES, SKILLS, ITEMS, EL, effect, xpNeed } from './data.js';
-import { statsOf, gainXp, applyItem, addKith } from './kith.js';
+import { statsOf, gainXp, applyItem, addKith, formsOf, newForms } from './kith.js';
 import { kithSprite, battleSize } from './kithart.js';
 import { mk, px, ell, hash, pline, sealSprite } from './art.js';
 import { sfx, music } from './audio.js';
@@ -115,20 +115,26 @@ function makeBg(type) {
     ell(g, FOE.x, FOE.y - 1, 30, 5, '#4ae3d8'); ell(g, FOE.x, FOE.y - 1, 27, 4, '#3a3d7a');
   } else {
     const coast = type === 'coast';
-    bands(['#6ab8f5', '#86c8f8', '#a4d8fa', '#c4e8fc', '#e0f4fe'], 0, 62);
-    for (let i = 0; i < 5; i++) { const x = (hash(i, 13) * 300) | 0, y = (8 + hash(i, 14) * 26) | 0; ell(g, x, y, 16, 4, '#ffffff'); ell(g, x + 9, y - 3, 9, 4, '#ffffff'); ell(g, x - 2, y + 2, 14, 3, '#e0f0fa'); }
+    const pal = {
+      ash: { sky: ['#3a2a3c', '#5c3442', '#8c4640', '#c2643c', '#ea9c4c'], cloud: ['#5c3442', '#3a2a3c'], hill: '#4a3a3c', ground: '#73665e', fleck: ['#5c514b', '#8a7c72'], plat: ['#4a403c', '#8a7c72'] },
+      snow: { sky: ['#84b0e0', '#a0c6ec', '#bedaf4', '#dcecfa', '#f2f8ff'], cloud: ['#ffffff', '#e0f0fa'], hill: '#b6c6dc', ground: '#e6edf6', fleck: ['#c6d3e4', '#ffffff'], plat: ['#a8bad0', '#ffffff'] },
+      coast: { sky: ['#6ab8f5', '#86c8f8', '#a4d8fa', '#c4e8fc', '#e0f4fe'], cloud: ['#ffffff', '#e0f0fa'], ground: '#ecd896', fleck: ['#d8be78', '#f8ecc0'], plat: ['#c4a868', '#f8ecc0'] },
+    }[type] || { sky: ['#6ab8f5', '#86c8f8', '#a4d8fa', '#c4e8fc', '#e0f4fe'], cloud: ['#ffffff', '#e0f0fa'], hill: '#58a868', ground: '#78c858', fleck: ['#5fb04a', '#92da68'], plat: ['#4a9440', '#92da68'] };
+    bands(pal.sky, 0, 62);
+    for (let i = 0; i < 5; i++) { const x = (hash(i, 13) * 300) | 0, y = (8 + hash(i, 14) * 26) | 0; ell(g, x, y, 16, 4, pal.cloud[0]); ell(g, x + 9, y - 3, 9, 4, pal.cloud[0]); ell(g, x - 2, y + 2, 14, 3, pal.cloud[1]); }
     if (coast) { px(g, 0, 56, '#2f74c4', 320, 16); for (let i = 0; i < 40; i++) px(g, hash(i, 15) * 320, 57 + hash(i, 16) * 14, '#9fdcf5', 5, 1); }
-    else for (let x = 0; x < 320; x++) { const h = 10 + Math.sin(x / 31) * 6 + Math.sin(x / 13 + 2) * 3; px(g, x, 62 - h, '#58a868', 1, h + 2); }
-    px(g, 0, coast ? 72 : 62, coast ? '#ecd896' : '#78c858', 320, 118);
-    for (let i = 0; i < 70; i++) { const y = (coast ? 74 : 64) + hash(i, 17) * 110; px(g, hash(i, 18) * 320, y, coast ? (i % 2 ? '#d8be78' : '#f8ecc0') : (i % 2 ? '#5fb04a' : '#92da68'), 3 + y / 24, 1); }
-    plat(FOE, coast ? '#c4a868' : '#4a9440', coast ? '#f8ecc0' : '#92da68', 48); plat(ME, coast ? '#c4a868' : '#4a9440', coast ? '#f8ecc0' : '#92da68', 60);
+    else for (let x = 0; x < 320; x++) { const h = type === 'field' || !type ? 10 + Math.sin(x / 31) * 6 + Math.sin(x / 13 + 2) * 3 : 14 + Math.abs(((x + 30) % 90) - 45) * 0.5 + Math.sin(x / 9) * 2; px(g, x, 62 - h, pal.hill, 1, h + 2); }
+    if (type === 'ash') for (let i = 0; i < 3; i++) { const x = 40 + i * 110; px(g, x, 40, '#ffb03a', 3, 22); px(g, x + 1, 36, '#ffe06a', 1, 6); }
+    px(g, 0, coast ? 72 : 62, pal.ground, 320, 118);
+    for (let i = 0; i < 70; i++) { const y = (coast ? 74 : 64) + hash(i, 17) * 110; px(g, hash(i, 18) * 320, y, pal.fleck[i % 2], 3 + y / 24, 1); }
+    plat(FOE, pal.plat[0], pal.plat[1], 48); plat(ME, pal.plat[0], pal.plat[1], 60);
   }
   return c;
 }
 
-function drawKith(g, s, base, flip, t) {
+function drawKith(g, s, base, view, t) {
   if (s.a <= 0.01 || s.s <= 0.01) return;
-  const size = battleSize(s.sp), spr = kithSprite(s.sp, size, flip, s.fl > 0 && ((s.fl * 22) | 0) % 2 === 0);
+  const size = battleSize(s.sp), spr = kithSprite(s.sp, size, false, s.fl > 0 && ((s.fl * 22) | 0) % 2 === 0, view);
   const w = Math.round(size * s.s), h = Math.round(size * s.s), fly = FLY.includes(s.sp);
   const bob = Math.round(Math.sin(t * (fly ? 3 : 2) + base.x) * (fly ? 2.5 : 1));
   g.globalAlpha = 0.28 * s.a;
@@ -142,8 +148,8 @@ export function drawBattle(g) {
   if (!B) return;
   const t = G.t, sh = B.shake > 0 ? Math.round((Math.random() - 0.5) * 6 * Math.min(1, B.shake * 4)) : 0;
   g.drawImage(B.bg, sh, 0);
-  drawKith(g, B.fs, FOE, false, t);
-  drawKith(g, B.ms, ME, true, t);
+  drawKith(g, B.fs, FOE, 'front', t);
+  drawKith(g, B.ms, ME, 'back', t);
   for (const q of B.parts) px(g, Math.round(q.x), Math.round(q.y), q.col, q.s, q.s);
   for (const b of B.bolts) for (let i = 1; i < b.pts.length; i++) { pline(g, b.pts[i - 1][0], b.pts[i - 1][1], b.pts[i][0], b.pts[i][1], '#ffffff'); pline(g, b.pts[i - 1][0] + 1, b.pts[i - 1][1], b.pts[i][0] + 1, b.pts[i][1], '#f6d743'); }
   if (B.orb) { ell(g, Math.round(B.orb.x), Math.round(B.orb.y), 4, 4, B.orb.col); ell(g, Math.round(B.orb.x) - 1, Math.round(B.orb.y) - 1, 2, 2, '#ffffff'); }
@@ -170,7 +176,8 @@ function calc(att, def, sk, opts = {}) {
   let m = effect(sk.el, SPECIES[def.sp].el);
   if (opts.pierce) m = Math.max(1, m);
   const stab = sk.el === SPECIES[att.sp].el ? 1.2 : 1, crit = Math.random() < 0.08;
-  const dmg = Math.max(1, Math.round(((sk.pow * A) / (Dv + 10) * 0.85 + 2) * m * stab * (crit ? 1.5 : 1) * (0.92 + Math.random() * 0.16)));
+  const gap = clamp(1 + (att.lv - def.lv) * 0.012, 0.5, 1.5);
+  const dmg = Math.max(1, Math.round(gap * ((sk.pow * A) / (Dv + 10) * 0.85 + 2) * m * stab * (crit ? 1.5 : 1) * (0.92 + Math.random() * 0.16)));
   return { dmg, m, crit };
 }
 
@@ -203,6 +210,7 @@ async function useSkill(side, id, opts = {}) {
     const back = tween(as, 'ox', 0, 0.18);
     await hitFx(other, sk.el, dmg, crit, m);
     await back;
+    if (side === 'me' && opts.sync) att.bursts = (att.bursts || 0) + 1;
     if (side === 'me') G.p.sync = opts.sync ? 0 : clamp(G.p.sync + 14, 0, 100);
     else G.p.sync = clamp(G.p.sync + 10, 0, 100);
     refresh();
@@ -357,9 +365,11 @@ async function tryBind(id) {
 }
 
 async function awardXp(f) {
-  const xp = Math.round((f.lv * 9 + 12) * (B.kind === 'wild' ? 1 : 1.5) * (f.boss ? 3 : 1));
+  const xp = Math.round((f.lv * 9 + 12 + f.lv * f.lv * 0.25) * (B.kind === 'wild' ? 1 : 1.5) * (f.boss ? 3 : 1));
+  if (me().hp > 0) me().wins = (me().wins || 0) + 1;
   const alive = G.p.party.filter(k => k.hp > 0);
   sfx('xp');
+  for (const k of alive) { formsOf(k); k.fw[k.sp] = (k.fw[k.sp] || 0) + 1; }
   const ups = alive.map(k => [k, gainXp(k, xp)]);
   refresh();
   await msg(alive.length > 1 ? `Your Kith each gained ${xp} XP.` : `${alive[0].name} gained ${xp} XP.`, 0.5);
@@ -412,6 +422,18 @@ async function endTurn() {
   refresh();
 }
 
+// Some bosses change shape at half health: status wiped, ATK up for good, and (for the worst of them) two moves a turn.
+async function enrage() {
+  const f = foe();
+  if (!f.traits || !f.traits.enrage || f._b.enraged || f.hp <= 0 || f.hp > statsOf(f).hp * f.traits.enrage) return;
+  f._b.enraged = true; f._b.st = null; f._b.stun = false; f._b.buf.atk = { m: 1.15, t: 999 };
+  const c = centre('foe');
+  sfx('sync'); B.flashCol = '#ffffff'; B.flash = 1; B.shake = 0.6;
+  for (let i = 0; i < 3; i++) { burst(c.x, c.y, 'shade', 16, 1.5); await sleep(0.12); }
+  refresh();
+  await msg(`${f.name} sheds its shape!${f.traits.double ? ' It moves twice a turn now.' : ''}`, 1);
+}
+
 async function loop() {
   for (;;) {
     const act = await command();
@@ -436,7 +458,12 @@ async function loop() {
           if (bstat(me(), 'spd') >= bstat(foe(), 'spd') || Math.random() < 0.6) { await msg('Got away safely!', 0.4); return 'run'; }
           await msg('Couldn\'t get away!', 0.4);
         }
-      } else await useSkill('foe', fact);
+      } else {
+        await useSkill('foe', fact);
+        const f = foe();
+        if (f.traits && f.traits.double && f._b.enraged && f.hp > 0 && me().hp > 0) await useSkill('foe', aiPick(f, me()));
+      }
+      await enrage();
       over = await checkFaints();
       if (over) break;
     }
@@ -482,6 +509,10 @@ export async function startBattle(o) {
   $('#floats').innerHTML = '';
   B = null;
   if (result === 'lose') blackout();
+  for (const k of p.party) {
+    const fresh = newForms(k).map(r => r.form).filter(f => !(k.told || (k.told = [])).includes(f));
+    if (fresh.length) { k.told.push(...fresh); toast(`${k.name} can take a new form! Kith, then Form Chart.`); }
+  }
   G.mode = 'world';
   music(W.map.music);
   saveGame();

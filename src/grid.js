@@ -101,6 +101,6 @@ export function nodeDesc(n) {
   if (n.t === 'hub') return 'Where every arm of the Lattice meets. +1 to all stats.';
   if (n.t === 'skill') return SKILLS[n.skill].desc;
   if (n.t === 'lock') return `Sealed. Needs Lattice Key ${n.lvl === 1 ? 'I' : 'II'}.`;
-  if (n.t === 'ascend') return `A Kith of Lv ${ASCEND_LV[n.lvl]}+ ascends to its next form here. Kith with no further form gain an apex bonus.`;
+  if (n.t === 'ascend') return n.lvl === 1 ? `Opens the first tier of this Kith's Form Chart. Needs Lv ${ASCEND_LV[1]}.` : `Opens the upper tiers of this Kith's Form Chart. Needs Lv ${ASCEND_LV[2]}.`;
   return `Permanently raises ${STAT_NAMES[n.t]} by ${n.v}.`;
 }

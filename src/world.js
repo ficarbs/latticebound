@@ -30,7 +30,7 @@ export function loadMap(id, x, y, d = 'down') {
   W.ground = grounds[id] || (grounds[id] = drawGround(m));
   W.statics = [];
   for (let ty = 0; ty < m.h; ty++) for (let tx = 0; tx < m.w; tx++) {
-    if (m.t[ty][tx] === 'T') W.statics.push({ spr: treeSprite((hash(tx, ty, 3) * 3) | 0), x: tx * 16 - 3, y: ty * 16 - 13, sy: ty * 16 + 15 });
+    if (m.t[ty][tx] === 'T') W.statics.push({ spr: treeSprite((hash(tx, ty, 3) * 3) | 0, m.theme), x: tx * 16 - 3, y: ty * 16 - 13, sy: ty * 16 + 15 });
   }
   for (const b of m.buildings) W.statics.push({ spr: buildingSprite(b.w, b.h, b.roof, b.sign, b.dx), x: b.x * 16, y: b.y * 16 - 8, sy: (b.y + b.h) * 16 - 2 });
   for (const s of m.signs) W.statics.push({ spr: signSprite(), x: s.x * 16, y: s.y * 16, sy: s.y * 16 + 15 });
@@ -40,6 +40,10 @@ export function loadMap(id, x, y, d = 'down') {
   Object.assign(G.p, { map: id, x, y, dir: d });
   music(m.music);
   banner(m.name);
+  if (m.town && !flag('v_' + id)) {
+    setFlag('v_' + id);
+    if (Object.keys(MAPS).filter(k => flag('v_' + k)).length > 1) toast(`Waygate attuned: ${m.name}. Travel from the menu.`);
+  }
 }
 
 const visible = n => !(n.hide && flag(n.hide)) && !(n.show && !flag(n.show));
@@ -121,7 +125,7 @@ async function arrive() {
 function step(nx, ny, t = 0) {
   const p = W.pl, f = W.fol;
   f.ox = f.x; f.oy = f.y; f.x = p.x; f.y = p.y;
-  if (f.x !== f.ox) f.flip = f.x > f.ox;
+  if (f.x !== f.ox) { f.flip = f.x > f.ox; f.view = 'side'; } else f.view = f.y > f.oy ? 'front' : 'back';
   p.ox = p.x; p.oy = p.y; p.x = nx; p.y = ny; p.t = t; p.moving = true; p.steps++;
   G.p.steps++;
 }
@@ -189,6 +193,17 @@ function fontSprite(g, x, y, t) {
   if (((t * 4) | 0) % 2) px(g, x + 2 + ((hash(t * 4 | 0, 1) * 12) | 0), y - 4 + ((hash(t * 4 | 0, 2) * 12) | 0), '#d0fffb', 1, 1);
 }
 
+function gateSprite(g, x, y, t) {
+  px(g, x - 1, y - 14, '#161228', 18, 30);
+  px(g, x, y - 13, '#8d93a0', 16, 28); px(g, x, y - 13, '#b9c0cc', 16, 2); px(g, x, y - 13, '#b9c0cc', 1, 28); px(g, x + 13, y - 11, '#666c7c', 3, 26);
+  px(g, x + 3, y - 9, '#161228', 10, 24);
+  for (let i = 0; i < 11; i++) {
+    const w = 2 + ((hash(i, (t * 7) | 0, 3) * 6) | 0), ox = (hash(i, (t * 7) | 0, 4) * (8 - w)) | 0;
+    px(g, x + 4 + ox, y - 8 + i * 2, ['#4ae3d8', '#2aa8a8', '#d0fffb', '#63e6e0'][(i + ((t * 5) | 0)) % 4], w, 2);
+  }
+  px(g, x + 7, y - 12, '#ffd84a', 2, 2);
+}
+
 export function drawWorld(g) {
   const p = W.pl, m = W.map, t = G.t, f = W.fol;
   const u = p.moving ? p.t : 1;
@@ -197,7 +212,7 @@ export function drawWorld(g) {
   const cx = Math.round(mw <= VW ? (mw - VW) / 2 : Math.max(0, Math.min(mw - VW, ppx + 8 - VW / 2)));
   const cy = Math.round(mh <= VH ? (mh - VH) / 2 : Math.max(0, Math.min(mh - VH, ppy + 8 - VH / 2)));
   W.cam.x = cx; W.cam.y = cy;
-  g.fillStyle = m.theme === 'out' ? '#1f5638' : '#0e0c1c';
+  g.fillStyle = { out: '#1f5638', ash: '#3a2f2c', snow: '#c6d3e4' }[m.theme] || '#0e0c1c';
   g.fillRect(0, 0, VW, VH);
   g.drawImage(W.ground[((t * 2) | 0) % 2], -cx, -cy);
 
@@ -209,8 +224,8 @@ export function drawWorld(g) {
     const o = { x: n.x * 16, y: n.y * 16, sy: n.y * 16 + 15, npc: n };
     if (n.look.startsWith('kith:')) {
       const big = n.look === 'kith:nullmaw' ? 40 : 30;
-      o.spr = kithSprite(n.look.slice(5), big); o.x += 8 - big / 2; o.y += 15 - big + Math.round(Math.sin(t * 2.5));
-    } else if (n.look !== 'rift' && n.look !== 'font') { o.spr = charSprite(n.look, n.dir, 0); o.x -= 1; o.y -= 6; }
+      o.spr = kithSprite(n.look.slice(5), big, false, false, 'front'); o.x += 8 - big / 2; o.y += 15 - big + Math.round(Math.sin(t * 2.5));
+    } else if (n.look !== 'rift' && n.look !== 'font' && n.look !== 'gate') { o.spr = charSprite(n.look, n.dir, 0); o.x -= 1; o.y -= 6; }
     list.push(o);
   }
   const lead = G.p.party[0];
@@ -218,7 +233,7 @@ export function drawWorld(g) {
     const fx = lerp(f.ox, f.x, u) * 16, fy = lerp(f.oy, f.y, u) * 16;
     const fly = ['murklet', 'noxwing', 'gillby', 'finfathom', 'wispurr'].includes(lead.sp);
     const hop = p.moving ? Math.abs(Math.sin(u * Math.PI)) * 2 : 0;
-    list.push({ spr: kithSprite(lead.sp, 20, f.flip), x: fx - 2, y: fy - 5 - Math.round(hop) - (fly ? 3 + Math.round(Math.sin(t * 4)) : 0), sy: fy + 14, grass: tileAt(Math.round(fx / 16), Math.round(fy / 16)) === ',' && !fly, gx: fx, gy: fy });
+    list.push({ spr: kithSprite(lead.sp, 20, f.view === 'side' && f.flip, false, f.view || 'front'), x: fx - 2, y: fy - 5 - Math.round(hop) - (fly ? 3 + Math.round(Math.sin(t * 4)) : 0), sy: fy + 14, grass: tileAt(Math.round(fx / 16), Math.round(fy / 16)) === ',' && !fly, gx: fx, gy: fy });
   }
   const frame = p.moving ? (((p.t * 2) | 0) + p.steps * 2) % 4 : 0;
   list.push({ spr: charSprite('hero', p.dir, [0, 1, 0, 2][frame]), x: ppx - 1, y: ppy - 6, sy: ppy + 15, grass: tileAt(Math.round(ppx / 16), Math.round(ppy / 16)) === ',', gx: ppx, gy: ppy });
@@ -227,12 +242,13 @@ export function drawWorld(g) {
     const x = Math.round(o.x - cx), y = Math.round(o.y - cy);
     if (o.npc && o.npc.look === 'rift') riftSprite(g, x, y, t, o.npc.x);
     else if (o.npc && o.npc.look === 'font') fontSprite(g, x, y, t);
+    else if (o.npc && o.npc.look === 'gate') gateSprite(g, x, y, t);
     else {
       if (o.dim) g.globalAlpha = 0.55;
       g.drawImage(o.spr, x, y);
       g.globalAlpha = 1;
     }
-    if (o.grass) g.drawImage(tallOverlay(), Math.round(o.gx - cx), Math.round(o.gy - cy) + 10);
+    if (o.grass) g.drawImage(tallOverlay(m.theme), Math.round(o.gx - cx), Math.round(o.gy - cy) + 10);
   }
   for (const q of W.parts) px(g, Math.round(q.x - cx), Math.round(q.y - cy), q.col, 2, 2);
   if (W.emote) g.drawImage(bangSprite(), W.emote.x * 16 + 4 - cx, W.emote.y * 16 - 18 - cy - Math.round(Math.min(1, (0.7 - W.emote.t) * 8) * 2));

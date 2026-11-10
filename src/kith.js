@@ -1,6 +1,6 @@
 // Kith instances: stats, growth along the Lattice, items.
 import { G } from './state.js';
-import { SPECIES, ITEMS, xpNeed, ASCEND_LV } from './data.js';
+import { SPECIES, SKILLS, ITEMS, CHARTS, xpNeed, ASCEND_LV, MAX_LV } from './data.js';
 import { NODES, ADJ, START, autoOrder } from './grid.js';
 
 const KEYS = ['hp', 'en', 'atk', 'def', 'spd'];
@@ -8,8 +8,8 @@ const KEYS = ['hp', 'en', 'atk', 'def', 'spd'];
 export function makeKith(sp, lv = 1) {
   const s = SPECIES[sp];
   const k = {
-    uid: Math.random().toString(36).slice(2, 10), sp, name: s.name, lv, xp: 0, sparks: 0, apex: 0,
-    nodes: s.id === 'nullmaw' ? [] : [...START[s.el]], skills: [], known: [], hp: 1, en: 1,
+    uid: Math.random().toString(36).slice(2, 10), sp, name: s.name, lv, xp: 0, sparks: 0, apex: 0, wins: 0, bursts: 0,
+    nodes: s.raw ? [] : [...START[s.el]], skills: [], known: [], hp: 1, en: 1,
   };
   for (const id of s.innate) learn(k, id);
   if (k.nodes.length) {
@@ -23,6 +23,7 @@ export function makeKith(sp, lv = 1) {
 }
 
 export function statsOf(k) {
+  if (k.fix) return { ...k.fix };
   const b = SPECIES[k.sp].b;
   const s = { hp: b[0], en: b[1], atk: b[2], def: b[3], spd: b[4] };
   for (const id of k.nodes) {
@@ -40,6 +41,54 @@ export function learn(k, id) {
   k.known.push(id);
   if (k.skills.length < 4) k.skills.push(id);
   return true;
+}
+
+// ---- Forms ----
+export const rootOf = sp => { while (SPECIES[sp].from) sp = SPECIES[sp].from; return sp; };
+// Older saves and freshly caught Kith get their form records filled in here.
+export function formsOf(k) {
+  if (!k.base || !CHARTS[k.base]) k.base = rootOf(k.sp);
+  if (!k.forms) { k.forms = []; for (let sp = k.sp; sp; sp = SPECIES[sp].from) k.forms.unshift(sp); }
+  if (!k.fw) k.fw = {};
+  return k.forms;
+}
+export const chartOf = k => (formsOf(k), CHARTS[k.base] || []);
+// A form's level rises with every two battles won while wearing it.
+export const formLv = (k, f) => (formsOf(k).includes(f) ? Math.min(99, 1 + ((k.fw[f] || 0) >> 1)) : 0);
+export const tierCap = k => k.nodes.filter(id => NODES[id].t === 'ascend').length;
+export function needOk(k, r) {
+  const el = SPECIES[k.sp].el;
+  if (r.t === 'lv') return k.lv >= r.n;
+  if (r.t === 'stat') return statsOf(k)[r.s] >= r.n;
+  if (r.t === 'form') return formLv(k, r.f) >= r.n;
+  if (r.t === 'nodes') return k.nodes.length >= r.n;
+  if (r.t === 'wins') return (k.wins || 0) >= r.n;
+  if (r.t === 'bursts') return (k.bursts || 0) >= r.n;
+  if (r.t === 'skills') return k.known.length >= r.n;
+  if (r.t === 'cross') return k.known.some(id => SKILLS[id].el !== el);
+  if (r.t === 'ally') return G.p.party.some(q => q !== k && SPECIES[q.sp].el === r.el);
+  if (r.t === 'place') return r.maps.includes(G.p.map);
+  return true;
+}
+export function needText(k, r) {
+  const now = r.t === 'stat' ? statsOf(k)[r.s] : r.t === 'form' ? formLv(k, r.f) : r.t === 'nodes' ? k.nodes.length : r.t === 'wins' ? k.wins || 0 : r.t === 'bursts' ? k.bursts || 0 : r.t === 'skills' ? k.known.length : null;
+  return needOk(k, r) || now == null || r.t === 'stat' ? r.text : `${r.text} (now ${now})`;
+}
+// Tier 1 forms need Ascension I lit, tiers 2 and 3 need Ascension II.
+export const tierOpen = (k, row) => tierCap(k) >= Math.min(2, row.tier);
+export const canUnlock = (k, row) => tierOpen(k, row) && row.need.every(r => needOk(k, r));
+export const newForms = k => chartOf(k).filter(row => !k.forms.includes(row.form) && canUnlock(k, row));
+export function shiftForm(k, to) {
+  formsOf(k);
+  const from = SPECIES[k.sp], next = SPECIES[to], before = statsOf(k);
+  if (k.name === from.name) k.name = next.name;
+  k.sp = to;
+  if (!k.forms.includes(to)) k.forms.push(to);
+  const after = statsOf(k);
+  k.hp = k.hp <= 0 ? 0 : Math.max(1, Math.round(k.hp * after.hp / before.hp));
+  k.en = Math.min(after.en, Math.round(k.en * after.en / before.en));
+  if (next.learn) learn(k, next.learn);
+  return next;
 }
 
 // Why a node can't be activated right now, or null if it can.
@@ -62,26 +111,11 @@ export function activate(k, id) {
   return n;
 }
 
-export function evolve(k) {
-  const from = SPECIES[k.sp], to = SPECIES[from.to];
-  const before = statsOf(k);
-  if (k.name === from.name) k.name = to.name;
-  k.sp = to.id;
-  const after = statsOf(k);
-  k.hp += after.hp - before.hp; k.en += after.en - before.en;
-  learn(k, to.learn);
-  return to;
-}
-export function apex(k) {
-  k.apex = (k.apex || 0) + 1;
-  k.hp += 14;
-}
-
 // Returns the number of levels gained.
 export function gainXp(k, amt) {
   let ups = 0;
   k.xp += amt;
-  while (k.lv < 50 && k.xp >= xpNeed(k.lv)) { k.xp -= xpNeed(k.lv); k.lv++; k.sparks++; ups++; }
+  while (k.lv < MAX_LV && k.xp >= xpNeed(k.lv)) { k.xp -= xpNeed(k.lv); k.lv++; k.sparks++; ups++; }
   return ups;
 }
 

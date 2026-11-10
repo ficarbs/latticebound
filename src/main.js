@@ -54,7 +54,12 @@ function drawWipe() {
 // Sprite sheet of every Kith, for art checks: open ?gallery
 function drawGallery() {
   px(g, 0, 0, '#5fb04a', 320, 180);
-  ALL_KITH.forEach((sp, i) => { const s = battleSize(sp) > 52 ? 44 : 36, spr = kithSprite(sp, s); g.drawImage(spr, 2 + (i % 8) * 40, 2 + ((i / 8) | 0) * 58 + (44 - s)); g.drawImage(kithSprite(sp, 20, true), 2 + (i % 8) * 40, 40 + ((i / 8) | 0) * 58); });
+  const page = +(new URLSearchParams(location.search).get('gallery') || 0);
+  ALL_KITH.slice(page * 12, page * 12 + 12).forEach((sp, i) => {
+    const x = 2 + (i % 4) * 80, y = 2 + ((i / 4) | 0) * 59, s = Math.min(40, battleSize(sp));
+    ['front', 'side', 'back'].forEach((v, j) => g.drawImage(kithSprite(sp, s, false, false, v), x + j * 26 - (s - 26) / 2, y + 40 - s));
+    ['front', 'side', 'back'].forEach((v, j) => g.drawImage(kithSprite(sp, 20, false, false, v), x + j * 22, y + 38));
+  });
 }
 
 function step(dt) {
@@ -103,17 +108,24 @@ function touchControls() {
   }
 }
 
+const title = () => showTitle({ canContinue: hasSave(), onNew: () => begin(newPlayer()), onContinue: () => begin(loadSave() || newPlayer()) });
+// After the credits: save, and hand the player back to the title screen with Continue ready.
+G.toTitle = async () => {
+  saveGame();
+  await wipe(1, 0.6);
+  G.mode = 'title';
+  music('title');
+  title();
+  await wipe(0, 0.6);
+};
+
 initInput();
 initUI();
 touchControls();
 for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, initAudio);
 music('title');
 if (location.search.includes('gallery')) { G.mode = 'gallery'; G.wipe = 0; $('#title').classList.add('hidden'); } else {
-  showTitle({
-    canContinue: hasSave(),
-    onNew: () => begin(newPlayer()),
-    onContinue: () => begin(loadSave() || newPlayer()),
-  });
+  title();
   wipe(0, 0.6);
 }
 addEventListener('beforeunload', () => { if (G.p && G.mode === 'world' && !G.busy) saveGame(); });

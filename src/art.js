@@ -74,17 +74,24 @@ const C = {
   cw: '#1c182e', cw1: '#6a6388', cw2: '#352f50', b1: '#b8804a', b2: '#8a5a30', b3: '#d8a468',
   x1: '#2b2d4a', x2: '#363962', x3: '#4ae3d8', xw: '#0e0f22', xw1: '#5a5fa0', xw2: '#24264e', ink: '#161228',
 };
-export const SOLID = 'T#RFXK~';
+export const SOLID = 'T#RFXK~L';
+// Outdoor palettes: [ground, ground dark, ground light], tall grass [base, blade, tip], tree leaves dark to light.
+const THEMES = {
+  out: { g: ['#5fb04a', '#4a9440', '#84cf5c'], tg: ['#3f8f45', '#2c6e3c', '#7fd060'], leaf: ['#1f5638', '#2f7d4a', '#4fa85a', '#7fd070'] },
+  ash: { g: ['#73665e', '#5c514b', '#8a7c72'], tg: ['#8a5236', '#643826', '#e8943c'], leaf: ['#6e2418', '#a83c24', '#dc742c', '#f5b44a'] },
+  snow: { g: ['#e6edf6', '#c6d3e4', '#ffffff'], tg: ['#a4c0d6', '#7a9cba', '#ffffff'], leaf: ['#173c3a', '#28604f', '#dfe8f2', '#ffffff'] },
+};
+const themeOf = t => THEMES[t] || THEMES.out;
 const GRASSY = '.,fTF';
 
 function tile(g, ch, X, Y, tx, ty, fr, at, theme) {
-  const h = n => hash(tx, ty, n);
+  const h = n => hash(tx, ty, n), TH = themeOf(theme);
   const grass = () => {
-    P(g, X, Y, C.g1, 16, 16);
+    P(g, X, Y, TH.g[0], 16, 16);
     for (let i = 0; i < 7; i++) {
       const x = (h(i) * 15) | 0, y = (h(i + 20) * 14) | 0;
-      P(g, X + x, Y + y, i % 3 ? C.g2 : C.g3, 1, 2);
-      if (i % 3 === 0) P(g, X + x + 1, Y + y + 1, C.g2);
+      P(g, X + x, Y + y, i % 3 ? TH.g[1] : TH.g[2], 1, 2);
+      if (i % 3 === 0) P(g, X + x + 1, Y + y + 1, TH.g[1]);
     }
   };
   const cave = () => {
@@ -127,23 +134,23 @@ function tile(g, ch, X, Y, tx, ty, fr, at, theme) {
       break;
     }
     case ',': {
-      P(g, X, Y, C.tg1, 16, 16);
+      P(g, X, Y, TH.tg[0], 16, 16);
       for (let r = 0; r < 3; r++) for (let i = 0; i < 4; i++) {
         const x = X + ((i * 4 + r * 2 + ((h(r * 4 + i) * 2) | 0)) % 16), y = Y + 3 + r * 5;
-        P(g, x, y - 1, C.tg2, 1, 4); P(g, x + 1, y - 2, C.tg2, 1, 3);
-        P(g, x, y - 3, C.tg3, 1, 2); P(g, x + 1, y - 3, C.tg3);
+        P(g, x, y - 1, TH.tg[1], 1, 4); P(g, x + 1, y - 2, TH.tg[1], 1, 3);
+        P(g, x, y - 3, TH.tg[2], 1, 2); P(g, x + 1, y - 3, TH.tg[2]);
       }
       break;
     }
     case ':':
       P(g, X, Y, C.p1, 16, 16);
       for (let i = 0; i < 5; i++) P(g, X + ((h(i) * 14) | 0), Y + ((h(i + 9) * 15) | 0), i % 2 ? C.p2 : C.p3, 2, 1);
-      edges(C.g2, c => GRASSY.includes(c));
+      edges(TH.g[1], c => GRASSY.includes(c));
       break;
     case 's':
       P(g, X, Y, C.s1, 16, 16);
       for (let i = 0; i < 5; i++) P(g, X + ((h(i) * 15) | 0), Y + ((h(i + 9) * 15) | 0), i % 2 ? C.s2 : C.s3);
-      edges(C.g2, c => GRASSY.includes(c));
+      edges(TH.g[1], c => GRASSY.includes(c));
       break;
     case '~': {
       P(g, X, Y, C.w1, 16, 16);
@@ -155,6 +162,19 @@ function tile(g, ch, X, Y, tx, ty, fr, at, theme) {
       if (!isWater(at(tx - 1, ty))) P(g, X, Y, C.w2, 1, 16);
       if (!isWater(at(tx + 1, ty))) P(g, X + 15, Y, C.w2, 1, 16);
       if (!isWater(at(tx, ty + 1))) P(g, X, Y + 15, C.w3, 16, 1);
+      break;
+    }
+    case 'L': {
+      P(g, X, Y, '#e8562a', 16, 16);
+      for (let i = 0; i < 4; i++) {
+        const x = ((h(i) * 11) | 0) + (fr ? 1 : 0), y = 2 + ((h(i + 5) * 12) | 0) - (fr ? 1 : 0);
+        P(g, X + x, Y + y, i % 2 ? '#ffb03a' : '#c23a22', 4, 2); if (i === 0) P(g, X + x + 1, Y + y, '#ffe06a', 2, 1);
+      }
+      const crust = '#2e2224';
+      if (at(tx, ty - 1) !== 'L') { P(g, X, Y, crust, 16, 2); for (let i = fr ? 3 : 1; i < 16; i += 5) P(g, X + i, Y + 2, '#ffb03a', 2, 1); }
+      if (at(tx, ty + 1) !== 'L') P(g, X, Y + 14, crust, 16, 2);
+      if (at(tx - 1, ty) !== 'L') P(g, X, Y, crust, 2, 16);
+      if (at(tx + 1, ty) !== 'L') P(g, X + 14, Y, crust, 2, 16);
       break;
     }
     case '=':
@@ -171,6 +191,11 @@ function tile(g, ch, X, Y, tx, ty, fr, at, theme) {
       P(g, X + 1, Y + 3, C.b2, 3, 11); P(g, X + 12, Y + 3, C.b2, 3, 11);
       P(g, X, Y + 5, C.b3, 16, 2); P(g, X, Y + 10, C.b1, 16, 2);
       P(g, X + 1, Y + 3, C.b3, 3, 1); P(g, X + 12, Y + 3, C.b3, 3, 1);
+      break;
+    case 'S':
+      P(g, X, Y, C.ink, 16, 16);
+      for (let i = 0; i < 4; i++) { P(g, X + 1 + i, Y + i * 4, theme === 'cave' ? C.c3 : C.xw1, 14 - i * 2, 3); P(g, X + 1 + i, Y + i * 4 + 3, theme === 'cave' ? C.c2 : C.xw2, 14 - i * 2, 1); }
+      P(g, X + 6, Y + 6, fr ? C.x3 : '#2aa8a8', 4, 2);
       break;
     case 'c': cave(); break;
     case 'p': spire(); break;
@@ -217,30 +242,31 @@ export function drawGround(map) {
   });
 }
 
-let tallFront;
-export function tallOverlay() {
-  if (tallFront) return tallFront;
-  const c = mk(16, 7), g = c.g;
+const tallFronts = {};
+export function tallOverlay(theme) {
+  if (tallFronts[theme]) return tallFronts[theme];
+  const c = mk(16, 7), g = c.g, tg = themeOf(theme).tg;
   for (let i = 0; i < 5; i++) {
     const x = i * 3 + 1;
-    P(g, x, 2, C.tg2, 2, 5); P(g, x, 1 + (i % 2), C.tg3, 1, 2); P(g, x + 1, 3, C.tg1, 1, 4);
+    P(g, x, 2, tg[1], 2, 5); P(g, x, 1 + (i % 2), tg[2], 1, 2); P(g, x + 1, 3, tg[0], 1, 4);
   }
-  return (tallFront = c);
+  return (tallFronts[theme] = c);
 }
 
-const trees = [];
-export function treeSprite(v) {
-  if (trees[v]) return trees[v];
-  const c = mk(22, 30), g = c.g;
+const trees = {};
+export function treeSprite(v, theme) {
+  const key = v + theme;
+  if (trees[key]) return trees[key];
+  const c = mk(22, 30), g = c.g, [l0, l1, l2, l3] = themeOf(theme).leaf;
   P(g, 9, 19, C.tr, 4, 10); P(g, 12, 19, C.tr0, 1, 10); P(g, 8, 27, C.tr, 6, 2); P(g, 8, 28, C.tr0, 1, 1);
-  ell(g, 11, 11, 10, 10, C.l1);
-  for (let y = 15; y < 22; y++) for (let x = 1; x < 21; x++) if (hash(x, y, v) > 0.35) { const d = (x - 11) ** 2 + (y - 11) ** 2; if (d < 100) P(g, x, y, C.l0); }
-  ell(g, 9, 9, 7, 6, C.l2); ell(g, 8, 7, 4, 3, C.l3);
+  ell(g, 11, 11, 10, 10, l1);
+  for (let y = 15; y < 22; y++) for (let x = 1; x < 21; x++) if (hash(x, y, v) > 0.35) { const d = (x - 11) ** 2 + (y - 11) ** 2; if (d < 100) P(g, x, y, l0); }
+  ell(g, 9, 9, 7, 6, l2); ell(g, 8, 7, 4, 3, l3);
   for (let i = 0; i < 16; i++) {
     const x = 3 + ((hash(i, v, 1) * 15) | 0), y = 3 + ((hash(i, v, 2) * 13) | 0);
-    if ((x - 11) ** 2 + (y - 11) ** 2 < 80) P(g, x, y, i % 2 ? C.l1 : C.l3, 2, 1);
+    if ((x - 11) ** 2 + (y - 11) ** 2 < 80) P(g, x, y, i % 2 ? l1 : l3, 2, 1);
   }
-  return (trees[v] = outline(c));
+  return (trees[key] = outline(c));
 }
 
 const ROOFS = {
@@ -294,6 +320,10 @@ export const LOOKS = {
   breeder: { hair: '#f08a3c', shirt: '#7fd070', pants: '#4a9440' },
   wren: { hair: '#f4f0e8', shirt: '#3fa7a0', pants: '#245aa0', skin: '#c89068' },
   hale: { hair: '#4e2e1c', hat: '#5a3792', shirt: '#a37cf0', pants: '#2e2c48' },
+  kael: { hair: '#e8562a', shirt: '#3a2a2a', pants: '#8a5236', skin: '#c89068' },
+  yuna: { hair: '#dfe8f2', hat: '#4a7ad8', shirt: '#f6d743', robe: true },
+  smith: { hair: '#2a2636', shirt: '#b8442a', pants: '#3a2a2a', skin: '#c89068' },
+  scout: { hair: '#6e4428', hat: '#dfe8f2', shirt: '#4a7ad8', pants: '#34406a' },
   acolyte: { hair: '#12132a', hat: '#12132a', shirt: '#2a2c58', robe: true, skin: '#b8c0d8' },
 };
 const chars = {};

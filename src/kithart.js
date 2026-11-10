@@ -245,26 +245,264 @@ const DRAW = {
   },
 };
 
-const hex = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
-const FLAT = [hex(K), hex(W)];
 
-function render(sp, S) {
+// Front and back views share one function per species: a.b is true for the back view,
+// and a.m(fn) draws fn twice, mirrored around the centre line.
+const FRONT = {
+  embrit(a) {
+    const o = '#f28a3a', d = '#c75a28', c = '#ffe6b8', y = '#ffd84a';
+    if (!a.b) { a.p(o, 44, 46, 59, 30, 55, 42, 60, 48, 47, 53); a.p(y, 49, 46, 56, 37, 54, 44, 56, 48); }
+    a.m(() => { a.e(25, 56, 4, 4, d); a.p(o, 22, 27, 17, 8, 30, 20); });
+    a.e(32, 46, 11, 10, o); if (!a.b) a.e(32, 49, 7, 6, c);
+    a.e(32, 30, 13, 11, o);
+    if (a.b) { a.p(o, 25, 48, 32, 20, 39, 48, 35, 58, 29, 58); a.p(y, 29, 48, 32, 31, 35, 48, 32, 54); a.p(d, 30, 22, 32, 27, 34, 22); }
+    else { a.m(() => { a.p(d, 22, 23, 20, 13, 26, 20); a.eye(26, 29, 2.8); }); a.e(32, 35.5, 6, 4, c); a.e(32, 33.5, 1.7, 1.3, K); a.p(y, 29, 21, 32, 14, 35, 21); }
+  },
+  flarevane(a) {
+    const o = '#f07a30', d = '#b8442a', c = '#ffe6b8', y = '#ffd84a', r = '#e84a2a';
+    if (!a.b) a.m(() => { a.p(r, 44, 44, 61, 24, 55, 40, 62, 46, 48, 53); a.p(y, 48, 45, 57, 33, 54, 43, 56, 47); });
+    a.m(() => { a.l(d, 5, 24, 48, 23, 59); a.p(y, 21, 36, 10, 28, 19, 25, 12, 15, 25, 21); a.p(o, 22, 22, 15, 4, 30, 15); });
+    a.e(32, 45, 13, 11, o); if (!a.b) a.e(32, 48, 8, 7, c);
+    a.e(32, 27, 13, 11, o);
+    if (a.b) { a.p(r, 20, 48, 25, 22, 32, 38, 39, 22, 44, 48, 37, 59, 27, 59); a.p(y, 26, 48, 29, 34, 32, 44, 35, 34, 38, 48, 32, 55); a.p(y, 27, 18, 32, 30, 37, 18, 32, 12); }
+    else { a.m(() => { a.p(d, 22, 19, 19, 9, 26, 16); a.eye2(26, 26, 3.3); }); a.e(32, 32.5, 6, 4, c); a.e(32, 30.5, 1.7, 1.3, K); a.p(y, 28, 19, 32, 9, 36, 19); }
+  },
+  solkharn(a) {
+    const o = '#e85a2a', d = '#a83228', c = '#ffeec4', y = '#ffd84a', w = '#fff3b0';
+    a.l(y, 2.6, 13, 16, 20, 7, 32, 4, 44, 7, 51, 16);
+    if (!a.b) a.m(() => { a.p(y, 44, 42, 62, 18, 56, 36, 62, 42, 50, 52); a.p(o, 46, 46, 61, 48, 52, 56); });
+    a.m(() => { a.l(d, 5.5, 23, 48, 21, 59); a.p(y, 20, 38, 8, 30, 18, 26, 9, 14, 24, 21); a.p(o, 22, 21, 14, 4, 30, 14); });
+    a.e(32, 45, 15, 12, o); if (!a.b) a.e(32, 47, 9, 9, c);
+    a.e(32, 26, 13, 11, o);
+    if (a.b) { a.p(y, 16, 48, 20, 20, 28, 38, 32, 16, 36, 38, 44, 20, 48, 48, 38, 59, 26, 59); a.p(w, 26, 48, 29, 34, 32, 44, 35, 34, 38, 48, 32, 56); a.p(y, 27, 17, 32, 30, 37, 17, 32, 10); }
+    else { a.m(() => a.eye2(26, 25, 3.5, w)); a.e(32, 31.5, 6, 4, c); a.e(32, 29.5, 1.7, 1.3, K); a.p(y, 32, 11, 35.5, 16, 32, 21, 28.5, 16); }
+  },
+  puddlop(a) {
+    const b = '#4aa6ec', d = '#2f78c4', l = '#c6ecff', p = '#ff9ab0';
+    a.m(() => { a.e(25, 56, 4.4, 2.6, d); a.p(d, 16, 40, 5, 34, 7, 47, 16, 48); });
+    a.p(d, 27, 30, 32, 16, 37, 30);
+    a.e(32, 42, 17, 14, b);
+    if (a.b) { a.p(d, 23, 52, 32, 36, 41, 52, 32, 47); a.l(d, 2, 32, 30, 32, 38); a.e(24, 38, 2.4, 1.8, l); }
+    else { a.e(32, 47, 11, 8, l); a.m(() => { a.eye(25, 39, 3.2); a.e(19, 45.5, 2.3, 1.4, p); }); a.e(32, 44.5, 2, 1.3, K); }
+  },
+  brinelle(a) {
+    const b = '#3f9be0', d = '#2a68b4', l = '#c6ecff', f = '#7ee0d8';
+    a.p(f, 45, 50, 60, 38, 57, 50, 60, 59);
+    a.e(32, 50, 16, 9, b); if (!a.b) a.e(32, 52, 10, 5, l);
+    a.m(() => { a.e(22, 58, 4.6, 2.6, d); a.p(f, 24, 22, 13, 7, 28, 15); });
+    a.l(b, 12, 32, 46, 32, 30);
+    a.e(32, 25, 11.5, 10, b);
+    if (a.b) { a.p(f, 28.5, 46, 32, 28, 35.5, 46); a.p(f, 29.5, 20, 32, 12, 34.5, 20); a.l(d, 1.6, 32, 47, 32, 55); }
+    else { a.l(l, 5, 32, 44, 32, 36); a.e(32, 29.5, 6, 4, l); a.m(() => a.eye(26.5, 23.5, 2.9)); a.e(32, 28, 1.6, 1.3, K); }
+  },
+  maelorca(a) {
+    const n = '#2c4f9c', d = '#1c3170', w = '#eef6ff', f = '#58c8e8';
+    if (a.b) a.p(n, 18, 50, 5, 59, 22, 61, 32, 55, 42, 61, 59, 59, 46, 50);
+    a.m(() => { a.p(d, 15, 41, 3, 53, 17, 51); a.p(f, 23, 26, 15, 13, 29, 21); });
+    a.p(n, 26, 27, 32, 5, 38, 27); a.p(f, 30, 22, 32, 11, 34, 22);
+    a.e(32, 40, 20, 16, n);
+    if (a.b) { a.e(32, 35, 9, 4.5, f); a.p(n, 27.5, 38, 32, 14, 36.5, 38); a.p(f, 30.5, 30, 32, 19, 33.5, 30); }
+    else { a.e(32, 47, 13, 8.5, w); a.m(() => { a.e(23, 32.5, 4.8, 2.5, w); a.e(24.5, 38, 2.1, 2.5, w); a.e(24.5, 38.4, 1.2, 1.7, K); }); a.l(d, 1.5, 25, 45.5, 32, 47.5, 39, 45.5); }
+  },
+  sprigit(a) {
+    const c = '#f3ebc0', s = '#d0be84', g = '#6cc24e', dg = '#3e9440', pk = '#ff8fa8';
+    a.m(() => { a.p(g, 31, 36, 12, 26, 17, 12, 30, 24); a.l(dg, 1.4, 30, 33, 18, 18); a.e(26, 56, 4, 2.6, s); });
+    a.l(dg, 2.2, 32, 38, 32, 25);
+    a.e(32, 46, 12, 10, c);
+    a.e(32, 23, 3.3, 3.3, pk);
+    if (a.b) { a.e(32, 53, 2.6, 2, s); a.l(s, 1.4, 32, 40, 32, 48); }
+    else { a.m(() => { a.eye(26.5, 44, 2.8); a.e(21, 49, 2.1, 1.3, pk); }); a.e(32, 49, 1.7, 1.1, K); }
+  },
+  brambuck(a) {
+    const b = '#c79a62', d = '#8a623a', g = '#5cb84a', dg = '#3a8a3c', c = '#f5e8c4';
+    a.m(() => { a.l(d, 3.8, 26, 48, 25, 60); a.l(d, 2.2, 28, 19, 22, 7); a.l(d, 2.2, 25, 13, 17, 10); a.e(21, 6, 3.8, 2.7, g); a.e(16, 10, 3.1, 2.3, dg); a.p(b, 24, 23, 13, 19, 23, 29); });
+    a.e(32, 45, 10, 10, b);
+    a.e(32, 26, 9, 9, b);
+    if (a.b) { a.e(32, 41, 8, 5.5, g); a.e(29, 39, 2.6, 1.8, dg); a.p(g, 28, 50, 32, 42, 36, 50, 32, 57); }
+    else { a.e(32, 48, 6, 6.5, c); a.e(32, 31, 5, 4, c); a.e(32, 29.5, 1.7, 1.4, K); a.m(() => a.eye(27, 24.5, 2.5)); a.e(32, 37, 5, 2.4, g); }
+  },
+  eldergrove(a) {
+    const b = '#a8804e', d = '#6e4a2c', g = '#4eac48', dg = '#2f7a3a', c = '#f0e2b8', pk = '#ffa0c0';
+    a.m(() => {
+      a.l(d, 5, 25, 48, 23, 59); a.l(d, 2.6, 28, 18, 20, 6); a.l(d, 2.6, 24, 11, 12, 9); a.l(d, 2.6, 26, 14, 16, 17);
+      a.e(19, 5.5, 5.6, 3.6, g); a.e(11, 9, 4.2, 3, dg); a.e(15, 17, 3.2, 2.3, g); a.e(17, 4.5, 1.6, 1.6, pk);
+      a.p(b, 23, 23, 12, 19, 22, 29); a.e(21, 39, 5.5, 3.4, g);
+    });
+    a.e(32, 45, 13, 11, b);
+    a.e(32, 26, 10, 9, b);
+    if (a.b) { a.e(32, 41, 12, 7.5, g); a.e(27, 39, 4, 2.6, dg); a.e(38, 43, 4, 2.6, dg); a.e(30, 43, 1.7, 1.7, pk); a.e(37, 38, 1.7, 1.7, pk); a.p(g, 28, 52, 32, 44, 36, 52, 32, 59); }
+    else { a.e(32, 49, 7, 6, c); a.p(g, 26, 32, 32, 47, 38, 32); a.e(32, 31, 5.5, 4, c); a.e(32, 29.5, 1.7, 1.4, K); a.m(() => a.eye2(26.5, 24, 3.2, '#eaffc0')); }
+  },
+  voltick(a) {
+    const y = '#f6d743', d = '#3a3850', l = '#fff6a8', c = '#6ee6ff';
+    a.m(() => { a.l(d, 2.4, 22, 48, 13, 55); a.l(d, 2.4, 24, 52, 19, 59); });
+    a.l(d, 1.7, 32, 36, 32, 26); a.p(c, 32, 27, 27, 20, 32, 22, 29, 13, 37, 22);
+    a.e(32, 45, 13, 10, y);
+    if (a.b) { a.m(() => a.p(d, 21, 39, 25, 37, 25, 53, 21, 51)); a.l(d, 1.5, 32, 36, 32, 55); a.e(26, 41, 2.6, 4, l); }
+    else { a.p(d, 30, 35, 34, 35, 34, 40, 30, 40); a.e(32, 47, 8.5, 7, d); a.m(() => { a.p(d, 27, 51, 21, 59, 30, 55); a.e(28, 45, 2.3, 2.3, W); a.e(28.4, 45.3, 1.1, 1.2, K); }); }
+  },
+  stagvolt(a) {
+    const y = '#f2c832', d = '#2e2c48', l = '#fff6a8', c = '#5fe8ff';
+    a.m(() => { a.l(d, 3, 21, 48, 11, 56); a.l(d, 3, 23, 52, 17, 60); a.p(c, 27, 40, 14, 35, 19, 30, 9, 20, 20, 24, 17, 10, 29, 32); });
+    a.e(32, 45, 15, 11, y);
+    if (a.b) { a.m(() => { a.p(d, 19, 40, 23, 38, 24, 54, 20, 52); a.p(c, 44, 34, 49, 26, 48, 32, 53, 30, 47, 38); }); a.l(d, 1.6, 32, 35, 32, 56); a.e(26, 41, 3, 4.6, l); }
+    else { a.e(32, 46, 10, 8.5, d); a.m(() => { a.p(c, 27, 52, 20, 60, 30, 56); a.e(27.5, 44, 2.6, 2.6, c); a.e(27.9, 44.3, 1.1, 1.4, K); }); }
+  },
+  pebblit(a) {
+    const r = '#9aa1b0', d = '#6a7080', l = '#c4cad6';
+    a.m(() => { a.l(d, 3, 24, 50, 19, 58); a.e(13, 44, 6, 5.5, r); a.p(K, 6, 42, 13, 44.5, 6, 47); a.l(d, 2, 27, 35, 26, 28); });
+    a.e(32, 43, 14, 10, r);
+    if (a.b) { a.p(l, 24, 38, 32, 34, 40, 38, 32, 42); a.p(d, 25, 46, 39, 46, 32, 52); a.m(() => a.e(26, 27.5, 2.6, 2.6, d)); }
+    else { a.p(l, 23, 38, 31, 34, 35, 38, 27, 41); a.p(d, 37, 46, 44, 42, 44, 49, 39, 51); a.m(() => { a.e(26, 27, 3.3, 3.3, W); a.e(26.5, 27.4, 1.5, 1.8, K); }); a.l(K, 1.3, 29, 46.5, 35, 46.5); }
+  },
+  cragnaw(a) {
+    const r = '#8c93a6', d = '#5a6074', l = '#bcc3d2', k = '#63e6e0', e = '#ffe066';
+    a.p(k, 28, 25, 32, 5, 36, 25); a.m(() => { a.p(k, 21, 28, 18, 11, 28, 25); a.l(d, 5, 24, 52, 22, 59); });
+    a.e(32, 40, 19, 15, r);
+    a.m(() => { a.e(9, 47, 8, 7, r); a.p(K, 1, 44, 9, 47, 1, 51); });
+    if (a.b) { a.p(k, 27, 44, 32, 20, 37, 44); a.m(() => { a.p(k, 19, 46, 22, 28, 27, 46); a.p(d, 16, 38, 20, 34, 18, 44); }); a.p('#d0fffb', 30, 40, 32, 26, 33, 40); }
+    else { a.p(l, 18, 31, 28, 26, 32, 31, 22, 35); a.p(K, 21, 43, 43, 43, 40, 52, 24, 52); teeth(a, 23, 41, 43, 4.5, 6); teeth(a, 26, 38, 52, -4.5, 6); a.m(() => a.eye2(25.5, 35.5, 3.2, e)); }
+  },
+  murklet(a) {
+    const p = '#7b5cc9', d = '#4c3792', m = '#c58af0', y = '#ffe066';
+    a.m(() => { a.p(d, 26, 34, 5, 22, 8, 34, 3, 40, 12, 40, 14, 47, 26, 42); a.p(m, 24, 36, 10, 28, 12, 36, 24, 40); a.p(p, 25, 29, 22, 15, 31, 25); a.e(29, 48, 2.2, 2.6, d); });
+    a.e(32, 37, 9, 10, p);
+    if (a.b) { a.p(d, 29, 30, 32, 26, 35, 30, 32, 44); a.e(32, 46, 2, 2.6, d); }
+    else { a.m(() => { a.e(28, 35, 2.7, 3.1, y); a.e(28, 35.5, 1.1, 1.9, K); a.p(W, 29, 41, 30.5, 45.5, 32, 41); }); }
+  },
+  noxwing(a) {
+    const p = '#4d3c94', d = '#2c2260', m = '#d05ae0', y = '#ffe066', f = '#8a70d8';
+    a.m(() => { a.p(d, 26, 30, 2, 10, 6, 26, 1, 34, 10, 36, 10, 47, 26, 42); a.p(m, 24, 32, 7, 18, 10, 30, 14, 38, 24, 38); a.p(p, 24, 25, 19, 8, 31, 20); a.e(27, 50, 3, 2.6, d); });
+    a.l(d, 3, 34, 48, 40, 56, 48, 54); a.p(m, 46, 50, 55, 54, 46, 59);
+    a.e(32, 36, 11, 13, p);
+    if (a.b) { a.p(d, 28, 26, 32, 22, 36, 26, 32, 46); a.m(() => a.p(m, 27, 30, 29, 28, 29, 36)); }
+    else { a.e(32, 44, 5.5, 4.5, f); a.m(() => { a.eye2(27, 31, 3.3, y); a.p(W, 28.5, 38, 30, 42.5, 31.5, 38); }); }
+  },
+  mossnip(a) {
+    const cap = '#4fb893', dc = '#2f8a72', sp = '#c8f5d8', st = '#f3ebc8', sd = '#cdbd8c';
+    a.m(() => a.e(27, 57, 3.6, 2.4, sd));
+    a.e(32, 35, 17, 12, cap); a.e(32, 41, 15, 3.6, dc);
+    a.e(32, 49, 8, 9, st);
+    a.e(24, 30, 3.2, 2.4, sp); a.e(36, 27, 3.6, 2.6, sp); a.e(44, 34, 2.4, 2, sp);
+    if (a.b) { a.e(30, 33, 2.2, 1.7, sp); a.e(20, 35, 2, 1.5, sp); a.l(sd, 1.4, 32, 44, 32, 54); }
+    else { a.m(() => a.eye(28.5, 48, 2.5)); a.e(32, 52.5, 1.6, 1.1, K); }
+  },
+  sporelord(a) {
+    const cap = '#3fa886', dc = '#256e5c', sp = '#d8ffe6', st = '#efe6c0', sd = '#c4b484', g = '#b8f07a';
+    a.m(() => { a.l(sd, 4.5, 23, 47, 12, 53); a.e(26, 59, 4.6, 2.6, sd); });
+    a.e(32, 20, 10, 6, cap); a.e(32, 23.5, 8, 2, dc);
+    a.e(32, 34, 22, 12, cap); a.e(32, 40.5, 19, 4, dc);
+    a.e(32, 50, 10, 10, st);
+    a.e(20, 30, 3.6, 2.6, sp); a.e(34, 28, 4, 2.8, sp); a.e(46, 33, 3, 2.2, sp); a.e(32, 18, 2.4, 1.8, sp);
+    a.e(9, 20, 2.6, 2.6, g); a.e(55, 15, 2.2, 2.2, g); a.e(52, 25, 1.7, 1.7, g); a.e(13, 11, 1.7, 1.7, g);
+    if (a.b) { a.e(26, 34, 2.6, 2, sp); a.e(40, 30, 2.4, 1.8, sp); a.l(sd, 1.6, 32, 44, 32, 57); }
+    else { a.m(() => a.eye2(27.5, 48, 3.1)); a.l(K, 1.3, 29, 54, 35, 54); }
+  },
+  gillby(a) {
+    const t = '#3ccabe', d = '#22968f', l = '#d0fff4', o = '#ff9a4a';
+    a.m(() => a.p(o, 23, 38, 9, 31, 12, 45, 23, 44));
+    a.p(o, 28, 29, 32, 16, 36, 29); a.p(o, 29, 48, 32, 57, 35, 48);
+    a.e(32, 38, 10.5, 11.5, t);
+    if (a.b) { a.p(o, 32, 22, 39, 38, 32, 54, 25, 38); a.l(d, 1.5, 32, 26, 32, 50); }
+    else { a.e(32, 43.5, 6, 4.5, l); a.m(() => a.eye(26.5, 35, 3.1)); a.e(32, 41, 2, 1.6, K); a.e(47, 24, 2, 2, l); a.e(51, 18, 1.4, 1.4, l); }
+  },
+  finfathom(a) {
+    const t = '#1f8f9a', d = '#145e70', l = '#bff3ee', y = '#ffe066';
+    a.m(() => a.p(d, 17, 40, 3, 33, 6, 49, 18, 47));
+    a.p(d, 27, 26, 32, 9, 37, 26);
+    a.l(d, 1.8, 32, 24, 33, 13, 39, 10); a.e(40.5, 10, 3.3, 3.3, y);
+    a.e(32, 38, 17, 14, t);
+    if (a.b) { a.p(d, 32, 20, 43, 38, 32, 58, 21, 38); a.l(t, 1.6, 32, 26, 32, 52); }
+    else { a.e(32, 47, 11, 4.5, l); a.p(K, 20, 41, 44, 41, 40, 50, 24, 50); teeth(a, 22, 42, 41, 4, 5); teeth(a, 25, 39, 50, -3.6, 4.7); a.m(() => a.eye2(24, 33, 3.3, y)); }
+  },
+  coalcub(a) {
+    const k = '#544d62', d = '#342f42', o = '#ff8a3a', y = '#ffd84a', b = '#857b96';
+    a.l(k, 5, 40, 48, 51, 42, 51, 31); a.e(51, 26.5, 3.7, 4.7, o); a.e(51, 26, 1.9, 2.7, y);
+    a.m(() => a.l(d, 3.8, 24, 51, 19, 58));
+    a.e(32, 49, 12, 8, k);
+    a.p(o, 29, 34, 32, 24, 35, 34);
+    a.e(32, 41, 10.5, 8.5, k);
+    if (a.b) { a.m(() => { a.e(27, 47, 2.6, 2, o); a.e(28, 39, 2, 1.6, o); }); a.e(32, 52, 1.9, 1.4, y); a.p(o, 30, 44, 32, 37, 34, 44); }
+    else { a.e(32, 54, 6.5, 2.6, b); a.m(() => { a.e(27, 40, 2.7, 2.9, y); a.e(27.4, 40.4, 1.1, 1.7, K); a.e(30.4, 45, 0.9, 0.8, d); }); }
+  },
+  magmander(a) {
+    const k = '#4c4558', d = '#2c2838', o = '#ff7a2a', y = '#ffd84a', r = '#e0402a';
+    a.l(k, 7, 42, 48, 55, 44, 56, 30); a.p(o, 51.5, 30, 56, 12, 60.5, 30, 56, 35); a.p(y, 54.4, 30, 56, 20, 57.6, 30);
+    a.m(() => { a.l(d, 5.4, 21, 50, 15, 59); a.p(o, 25, 38, 21, 24, 31, 35); });
+    a.p(o, 28, 36, 32, 19, 36, 36); a.p(y, 30.4, 35, 32, 26, 33.6, 35);
+    a.e(32, 47, 15, 10, k);
+    if (a.b) { a.p(o, 28, 46, 32, 33, 36, 46); a.p(o, 28.5, 56, 32, 45, 35.5, 56); a.p(y, 30.6, 45, 32, 38, 33.4, 45); a.m(() => a.e(24, 46, 2.5, 1.9, o)); }
+    else { a.m(() => a.p(d, 25, 37, 19, 26, 29, 33)); a.e(32, 43, 11.5, 9.5, k); a.p(r, 24, 47, 40, 47, 32, 53.5); a.m(() => { a.e(26.5, 40, 2.9, 3.1, y); a.e(27, 40.4, 1.2, 1.8, K); }); a.e(32, 55, 7, 2.6, r); }
+  },
+  wispurr(a) {
+    const v = '#cdbcf7', d = '#9a84dc', c = '#7ef0ff', n = '#ff9ab0';
+    a.p(v, 23, 36, 41, 36, 45, 48, 39, 59, 32, 52, 25, 59, 19, 48);
+    a.m(() => a.p(v, 23, 24, 19, 9, 30, 21));
+    a.e(32, 30, 12, 10.5, v);
+    a.e(50, 33, 2.2, 2.2, c); a.e(14, 44, 1.5, 1.5, c);
+    if (a.b) { a.p(d, 28, 42, 32, 35, 36, 42, 32, 57); a.p(d, 30, 22, 32, 27, 34, 22); }
+    else { a.m(() => { a.p(d, 23.5, 21, 22, 14, 27, 20); a.e(27, 30, 2.6, 3.2, c); a.e(27, 30, 0.9, 2.3, K); a.l(d, 1, 22, 34.5, 13, 33.5); }); a.e(32, 34.8, 1.4, 1, n); }
+  },
+  phantigre(a) {
+    const v = '#b9a6f0', d = '#6a54b8', c = '#7ef0ff';
+    a.l(v, 5, 43, 46, 54, 38, 54, 25); a.e(54, 20.5, 3.3, 4.3, c);
+    a.m(() => { a.p(v, 20, 46, 28, 46, 27, 60, 22, 56); a.p(v, 22, 22, 16, 6, 30, 16); a.p(v, 21, 30, 11, 36, 22, 38); });
+    a.e(32, 45, 13, 11, v);
+    a.e(32, 28, 13, 11, v);
+    a.e(10, 14, 1.9, 1.9, c);
+    if (a.b) { a.m(() => { a.p(d, 22, 39, 30, 41, 22, 43); a.p(d, 22, 47, 30, 49, 22, 51); a.p(d, 22, 24, 28, 26, 22, 28); }); a.p(d, 30, 17, 32, 24, 34, 17); }
+    else { a.p(d, 30, 17.5, 32, 24, 34, 17.5); a.m(() => { a.p(d, 19.5, 26, 24, 28, 19.5, 30.5); a.eye2(26, 27, 3.5, c); a.p(W, 28, 34, 29.5, 39.8, 31, 34); }); a.e(32, 32.5, 1.6, 1.3, K); }
+  },
+  nullmaw(a) {
+    const k = '#241f3e', d = '#0e0c1c', b = '#3a3364', c = '#4ae6e0', m = '#ff4a9a';
+    a.m(() => { a.l(k, 5, 14, 40, 5, 50, 7, 60); a.l(k, 4, 20, 20, 10, 8); });
+    a.e(32, 36, 22, 20, k); a.e(32, 31, 16, 12, b);
+    a.p(c, 5, 26, 12, 26, 12, 29, 5, 29); a.p(m, 52, 18, 60, 18, 60, 21, 52, 21); a.p(c, 48, 55, 57, 55, 57, 58, 48, 58); a.p(m, 6, 44, 12, 44, 12, 47, 6, 47);
+    if (a.b) { a.e(32, 36, 9, 9, d); a.e(32, 36, 5, 5, c); a.e(32, 36, 3, 3, d); }
+    else { a.e(32, 25, 7, 6, W); a.e(32, 25, 3.6, 5, c); a.e(32, 25, 1.5, 3.6, K); a.p(d, 14, 38, 50, 38, 44, 55, 20, 55); a.e(32, 50, 8, 3, m); teeth(a, 16, 44, 38, 6.5); teeth(a, 22, 40, 55, -6, 6.3); }
+  },
+  unlit(a) {
+    const w = '#f4ecd8', s = '#b8b0c8', d = '#0e0c1c', y = '#ffd84a', c = '#4ae6e0', m = '#ff4a9a';
+    a.m(() => { a.l(s, 5, 14, 40, 4, 48, 6, 60); a.l(s, 4, 18, 46, 12, 58); a.p(y, 20, 20, 12, 4, 26, 15); a.p(w, 12, 30, 2, 22, 5, 36); });
+    a.p(y, 26, 16, 32, 3, 38, 16);
+    a.e(32, 36, 21, 20, w); a.e(32, 38, 15, 14, d);
+    a.p(c, 4, 44, 10, 44, 10, 47, 4, 47); a.p(m, 54, 26, 60, 26, 60, 29, 54, 29);
+    if (a.b) { a.e(32, 38, 9, 9, w); a.e(32, 38, 5, 5, d); a.e(32, 38, 2, 2, y); }
+    else { a.e(32, 31, 5, 4.5, y); a.e(32, 31, 1.6, 3.4, d); a.m(() => { a.e(23, 37, 3, 2.6, c); a.e(23, 37, 1, 2, d); a.e(26, 45, 2.2, 2, m); }); a.p(w, 24, 50, 27, 44, 30, 50); a.p(w, 34, 50, 37, 44, 40, 50); a.p(w, 29, 51, 32, 46, 35, 51); }
+  },
+};
+
+DRAW.unlit = FRONT.unlit;
+const hex = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const FLAT = [K, W];
+const TONES = [
+  c => [c[0] + (255 - c[0]) * 0.34, c[1] + (255 - c[1]) * 0.3, c[2] + (255 - c[2]) * 0.16], // light, pushed warm
+  c => c,
+  c => [c[0] * 0.74, c[1] * 0.68, c[2] * 0.86], // shade, pushed cool
+  c => [c[0] * 0.5, c[1] * 0.44, c[2] * 0.66],
+];
+
+function render(sp, S, view) {
   const c = mk(S, S), g = c.g, pal = [];
   g.imageSmoothingEnabled = true;
-  g.setTransform(S / 64, 0, 0, S / 64, 0, 0);
   const reg = col => { if (!pal.includes(col)) pal.push(col); return col; };
+  const base = () => g.setTransform(S / 64, 0, 0, S / 64, 0, 0);
+  base();
   const a = {
+    b: view === 'back',
     e(cx, cy, rx, ry, col, rot = 0) { g.fillStyle = reg(col); g.beginPath(); g.ellipse(cx, cy, rx, ry, rot, 0, 7); g.fill(); },
     p(col, ...pts) { g.fillStyle = reg(col); g.beginPath(); g.moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 2) g.lineTo(pts[i], pts[i + 1]); g.fill(); },
     l(col, w, ...pts) { g.strokeStyle = reg(col); g.lineWidth = w; g.lineCap = g.lineJoin = 'round'; g.beginPath(); g.moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 2) g.lineTo(pts[i], pts[i + 1]); g.stroke(); },
     eye(x, y, r = 2.5) { a.e(x, y, r, r * 1.2, K); a.e(x - r * 0.3, y - r * 0.45, r * 0.42, r * 0.42, W); },
     eye2(x, y, r = 3, col = W) { a.p(col, x - r, y - r * 0.2, x + r, y - r * 0.9, x + r * 0.8, y + r * 0.7, x - r * 0.6, y + r * 0.6); a.e(x - r * 0.1, y, r * 0.4, r * 0.56, K); },
+    m(fn) { fn(); g.setTransform(-S / 64, 0, 0, S / 64, S, 0); fn(); base(); },
   };
-  DRAW[sp](a);
+  (view === 'side' ? DRAW : FRONT)[sp](a);
   g.setTransform(1, 0, 0, 1, 0, 0);
-  const rgb = pal.map(hex), im = g.getImageData(0, 0, S, S), d = im.data, idx = new Int16Array(S * S).fill(-1);
+  const rgb = pal.map(hex), flat = pal.map(p => FLAT.includes(p));
+  const im = g.getImageData(0, 0, S, S), d = im.data, idx = new Int16Array(S * S).fill(-1);
   for (let i = 0; i < S * S; i++) {
-    if (d[i * 4 + 3] < 120) { d[i * 4 + 3] = 0; continue; }
+    if (d[i * 4 + 3] < 120) continue;
     let best = 0, bd = 1e9;
     for (let j = 0; j < rgb.length; j++) {
       const q = rgb[j], e = (d[i * 4] - q[0]) ** 2 + (d[i * 4 + 1] - q[1]) ** 2 + (d[i * 4 + 2] - q[2]) ** 2;
@@ -272,33 +510,50 @@ function render(sp, S) {
     }
     idx[i] = best;
   }
-  // Rim shading: light from the upper left, shadow on the lower right of the silhouette.
-  const s = S >= 44 ? 2 : 1, solid = (x, y) => x >= 0 && y >= 0 && x < S && y < S && idx[y * S + x] >= 0;
+  // Volume shading, light from the upper left. Each pixel gets one of four tones:
+  // a light rim where the silhouette faces the light, a shade band away from it, a deep band at the
+  // very edge, and a shade line wherever one body part overlaps another.
+  const at = (x, y) => (x < 0 || y < 0 || x >= S || y >= S ? -1 : idx[y * S + x]);
+  const run = (x, y, dx, dy, max, same) => { const me = at(x, y); for (let n = 1; n <= max; n++) { const q = at(x + dx * n, y + dy * n); if (same ? q !== me : q < 0) return n; } return 99; };
+  const s1 = Math.max(1, Math.round(S / 13)), s2 = S >= 36 ? Math.max(1, Math.round(S / 30)) : 0, h1 = Math.max(1, Math.round(S / 20));
+  const tone = new Int8Array(S * S).fill(1);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const i = y * S + x, me = idx[i];
+    if (me < 0 || flat[me]) continue;
+    const far = Math.min(run(x, y, 1, 1, s1, false), run(x, y, 0, 1, s1, false));
+    const near = Math.min(run(x, y, -1, -1, h1, false), run(x, y, 0, -1, h1, false));
+    let t = far <= s2 ? 3 : far <= s1 ? 2 : near <= h1 ? 0 : 1;
+    // one part overlapping another: shade the hidden side of the seam
+    const r = at(x + 1, y), b = at(x, y + 1);
+    if (t < 2 && ((r >= 0 && r !== me && !flat[r]) || (b >= 0 && b !== me && !flat[b]))) t = 2;
+    else if (t === 1 && S >= 36 && Math.min(run(x, y, 1, 1, 2, true), run(x, y, 0, 1, 2, true)) <= 2) { const q = at(x + 1, y + 1) >= 0 ? at(x + 2, y + 2) : -1; if (q >= 0 && !flat[q] && q !== me) t = 2; }
+    tone[i] = t;
+  }
+  const out = g.createImageData(S, S), o = out.data;
+  const put = (i, col) => { o[i * 4] = col[0]; o[i * 4 + 1] = col[1]; o[i * 4 + 2] = col[2]; o[i * 4 + 3] = 255; };
   for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
     const i = y * S + x;
-    if (idx[i] < 0) continue;
-    let [r, gg, b] = rgb[idx[i]];
-    const flat = FLAT.some(f => f[0] === r && f[1] === gg && f[2] === b);
-    if (!flat && S >= 28) {
-      if (!solid(x + s, y + s) || !solid(x, y + s)) { r *= 0.68; gg *= 0.62; b *= 0.8; }
-      else if (!solid(x - s, y - s) || !solid(x, y - s)) { r += (255 - r) * 0.3; gg += (255 - gg) * 0.3; b += (255 - b) * 0.3; }
-    }
-    d[i * 4] = r; d[i * 4 + 1] = gg; d[i * 4 + 2] = b; d[i * 4 + 3] = 255;
+    if (idx[i] >= 0) { put(i, TONES[tone[i]](rgb[idx[i]])); continue; }
+    // Outline: plain ink underneath and to the right, tinted by the body colour where the light hits.
+    const below = at(x, y + 1), right = at(x + 1, y), above = at(x, y - 1), left = at(x - 1, y);
+    if (above >= 0 || left >= 0) put(i, INK);
+    else if (below >= 0 || right >= 0) { const q = rgb[below >= 0 ? below : right], k = TONES[3](q); put(i, [(k[0] + INK[0]) / 2, (k[1] + INK[1]) / 2, (k[2] + INK[2]) / 2]); }
   }
-  g.putImageData(im, 0, 0);
-  return outline(c, INK);
+  g.putImageData(out, 0, 0);
+  return c;
 }
 
 const cache = {};
-export function kithSprite(sp, size = 48, flip = false, white = false) {
-  const key = sp + size + (flip ? 'f' : '') + (white ? 'w' : '');
+// view: 'side' (three-quarter, faces left), 'front' or 'back'.
+export function kithSprite(sp, size = 48, flip = false, white = false, view = 'side') {
+  const base = sp + size + view, key = base + (flip ? 'f' : '') + (white ? 'w' : '');
   if (cache[key]) return cache[key];
-  let c = cache[sp + size] || (cache[sp + size] = render(sp, size));
-  if (flip) c = cache[sp + size + 'f'] || (cache[sp + size + 'f'] = flipH(c));
+  let c = cache[base] || (cache[base] = render(sp, size, view));
+  if (flip) c = cache[base + 'f'] || (cache[base + 'f'] = flipH(c));
   if (white) c = whiten(c);
   return (cache[key] = c);
 }
-export const battleSize = sp => (sp === 'nullmaw' ? 64 : [0, 40, 52, 62][SPECIES[sp].stage]);
+export const battleSize = sp => (SPECIES[sp].raw ? 64 : [0, 40, 52, 62][SPECIES[sp].stage]);
 const urls = {};
-export const kithIcon = sp => urls[sp] || (urls[sp] = kithSprite(sp, 48).toDataURL());
+export const kithIcon = (sp, view = 'front') => urls[sp + view] || (urls[sp + view] = kithSprite(sp, 48, false, false, view).toDataURL());
 export const ALL_KITH = Object.keys(DRAW);

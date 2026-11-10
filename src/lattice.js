@@ -3,7 +3,7 @@ import { G } from './state.js';
 import { hit, rep } from './input.js';
 import { NODES, EDGES, ADJ, nodeLabel, nodeDesc } from './grid.js';
 import { ELS, EL, SPECIES, SKILLS } from './data.js';
-import { statsOf, cantReason, activate, apex } from './kith.js';
+import { statsOf, cantReason, activate, newForms } from './kith.js';
 import { mk, px, pline, hash } from './art.js';
 import { kithSprite, kithIcon } from './kithart.js';
 import { sfx } from './audio.js';
@@ -128,8 +128,9 @@ async function activateCur() {
   if (n.t === 'skill') toast(`${k.name} learned ${SKILLS[n.skill].name}!${k.skills.includes(n.skill) ? '' : ' Equip it from Kith → Skills.'}`);
   else if (n.t === 'lock') toast('The lock dissolves. A new path opens.');
   else if (n.t === 'ascend') {
-    if (SPECIES[k.sp].to) { G.busy++; await evolveScene(k); G.busy--; }
-    else { apex(k); toast(`${k.name} reached its apex! +14 HP, +3 ATK/DEF/SPD.`); }
+    const row = newForms(k)[0];
+    if (row) { G.busy++; await evolveScene(k, row.form); G.busy--; rebuild(); }
+    else toast('A tier of the Form Chart opens. See Kith, then Form Chart, for what each form asks.');
     refresh();
   }
 }
@@ -183,7 +184,7 @@ export function drawLattice(g) {
     g.globalAlpha = 1;
   }
   // the Kith stands on the last node it lit
-  const at = NODES[L.k.at != null ? L.k.at : 0], spr = kithSprite(L.k.sp, 20);
+  const at = NODES[L.k.at != null ? L.k.at : 0], spr = kithSprite(L.k.sp, 20, false, false, 'front');
   g.drawImage(spr, at.x + C0 + ox - 10, at.y + C0 + oy - 26 + Math.round(Math.sin(t * 3) * 1.5));
   // cursor brackets
   const c = NODES[L.cur], x = c.x + C0 + ox, y = c.y + C0 + oy, e = 9 + Math.round(Math.sin(t * 6));
