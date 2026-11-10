@@ -142,7 +142,7 @@ function drawHud() {
 function screen(cls, title) {
   const s = document.createElement('div');
   s.className = 'screen scope ' + cls;
-  s.innerHTML = `<div class="s-head">${title}</div><div class="s-list"></div><div class="s-side pn"></div><div class="s-foot">Z select · X back</div>`;
+  s.innerHTML = `<div class="s-head">${title}</div><div class="s-list"></div><div class="s-side pn"></div><div class="s-foot">${document.body.classList.contains('touch') ? 'Tap to select · tap again to confirm' : 'Z select · X back'}</div>`;
   $('#screens').append(s);
   return s;
 }
@@ -551,13 +551,22 @@ export function initUI() {
   backEl = $('#back');
   backEl.addEventListener('click', () => { const sc = D.wait ? null : topScope(); if (sc && sc._cancel) sc._cancel(); });
   dEl.addEventListener('click', e => { if (D.wait && !e.target.closest('button')) advance(); });
+  // Touch: the first tap on an option only selects it (and shows its details); a second tap confirms.
+  let touch = false, armed = false;
+  ui.addEventListener('pointerdown', e => {
+    touch = e.pointerType === 'touch' || e.pointerType === 'pen';
+    const b = e.target.closest('.scope button');
+    armed = !!b && b.classList.contains('sel');
+  }, true);
   ui.addEventListener('pointerover', e => {
+    if (e.pointerType === 'touch' || e.pointerType === 'pen') return;
     const b = e.target.closest('.scope button');
     if (b && !b.disabled && b.closest('.scope') === topScope()) select(b.closest('.scope'), b, true);
   });
   // Clicks only reach the scope that currently owns input.
   ui.addEventListener('click', e => {
     const b = e.target.closest('.scope button');
-    if (b && (D.wait || b.closest('.scope') !== topScope())) { e.stopPropagation(); e.preventDefault(); }
+    if (b && (D.wait || b.closest('.scope') !== topScope())) { e.stopPropagation(); e.preventDefault(); return; }
+    if (b && touch && !armed && !b.disabled) { select(b.closest('.scope'), b); e.stopPropagation(); e.preventDefault(); }
   }, true);
 }
