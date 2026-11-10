@@ -38,7 +38,7 @@ function refresh() {
     el.querySelector('.bp-lv').textContent = 'Lv ' + k.lv;
     const st = k._b.st ? `<span class="st st-${k._b.st.id}">${STATUS[k._b.st.id]}</span>` : '';
     const bufs = Object.entries(k._b.buf).map(([key, v]) => `<span class="st ${v.m > 1 ? 'up' : 'dn'}">${key.toUpperCase()}${v.m > 1 ? '▲' : '▼'}</span>`).join('');
-    el.querySelector('.bp-bar').innerHTML = bar('hp', k.hp / s.hp) + (mine ? bar('en', k.en / s.en) + bar('xp', k.xp / xpNeed(k.lv)) : '');
+    el.querySelector('.bp-bar').innerHTML = bar('hp', k.hp / s.hp) + (mine ? bar('en', k.en / s.en) + bar('xp', k.lv >= 100 ? 1 : k.xp / xpNeed(k.lv)) : '');
     el.querySelector('.bp-sub').innerHTML = elTag(sp.el) + (mine ? `<span>${Math.max(0, k.hp)}/${s.hp} HP · ${k.en} EN</span>` : `<span class="pips">${B.kind === 'wild' ? '' : B.foes.map((f, i) => `<i class="${f.hp > 0 && i >= B.fi ? 'on' : ''}"></i>`).join('')}</span>`) + st + bufs;
   };
   panel('.b-panel.foe', foe(), false);

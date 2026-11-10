@@ -174,3 +174,9 @@ b { font-weight: 600; }
 
 .pr { color: #9ff5ee; font-style: normal; }
 .index .s-list { gap: 5px; }
+
+#back { position: absolute; right: 14px; top: 8px; z-index: 5; pointer-events: auto; background: var(--panel2); color: var(--cream); border: 3px solid var(--cream); border-radius: 6px; box-shadow: 0 0 0 3px var(--ink); font-family: var(--px); font-size: 11px; padding: 9px 12px; }
+#back:active { background: var(--gold); color: var(--ink); }
+body.touch #back { font-size: 13px; padding: 13px 16px; }
+body.touch .s-foot { visibility: hidden; }
+.menu { top: 62px; }

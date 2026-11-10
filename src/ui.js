@@ -13,7 +13,7 @@ import { warpTo } from './world.js';
 
 export const $ = s => document.querySelector(s);
 const D = { wait: false, full: '', n: 0, res: null, blip: 0 };
-let dEl, dName, dText, dOpts, hudT = 0;
+let dEl, dName, dText, dOpts, backEl, hudT = 0;
 
 function topScope() {
   const all = [...document.querySelectorAll('#ui .scope')].filter(e => !e.closest('.hidden'));
@@ -74,6 +74,9 @@ export function uiTick(dt) {
     if (roll.y < roll.end) { const r = roll; roll = null; r.res(); }
   }
   if ((hudT -= dt) < 0) { hudT = 0.4; drawHud(); }
+  // An on-screen Back for whatever menu owns input, so touch players are never stuck without the X key.
+  const sc = D.wait ? null : topScope();
+  backEl.classList.toggle('hidden', !(sc && sc._cancel));
   document.body.classList.toggle('ui-open', uiActive() || G.mode === 'title' || G.mode === 'battle');
 }
 function advance() {
@@ -156,7 +159,7 @@ function kithDetail(k) {
   return `<div class="kd-top"><img src="${kithIcon(k.sp, 'front', k.pr)}"><div><b>${k.name}</b><div>${elTag(sp.el)} Lv ${k.lv}</div><div class="dim">Strong vs ${strongVs(sp.el).map(e => EL[e].name).join(', ')}</div></div></div>
     <p class="dim">${sp.blurb}</p><p class="rite">Form Lv ${formLv(k, k.sp)} · ${formsOf(k).length}/${chartOf(k).length + 1} forms</p>
     <div class="stats"><span>HP <b>${Math.max(0, k.hp)}/${s.hp}</b></span><span>EN <b>${k.en}/${s.en}</b></span><span>ATK <b>${s.atk}</b></span><span>DEF <b>${s.def}</b></span><span>SPD <b>${s.spd}</b></span><span>Sparks <b class="spk">✦ ${k.sparks}</b></span></div>
-    ${bar('xp', k.xp / xpNeed(k.lv))}<div class="dim">${xpNeed(k.lv) - k.xp} XP to next level · ${k.nodes.length} nodes lit</div>
+    ${bar('xp', k.lv >= 100 ? 1 : k.xp / xpNeed(k.lv))}<div class="dim">${k.lv >= 100 ? 'Max level' : `${xpNeed(k.lv) - k.xp} XP to next level`} · ${k.nodes.length} nodes lit</div>
     <div class="sk-list">${skillLine('strike')}${k.skills.map(skillLine).join('')}</div>`;
 }
 
@@ -545,6 +548,8 @@ export function showTitle({ canContinue, onNew, onContinue }) {
 export function initUI() {
   dEl = $('#dialog'); dName = dEl.querySelector('.d-name'); dText = dEl.querySelector('.d-text'); dOpts = dEl.querySelector('.d-opts');
   const ui = $('#ui');
+  backEl = $('#back');
+  backEl.addEventListener('click', () => { const sc = D.wait ? null : topScope(); if (sc && sc._cancel) sc._cancel(); });
   dEl.addEventListener('click', e => { if (D.wait && !e.target.closest('button')) advance(); });
   ui.addEventListener('pointerover', e => {
     const b = e.target.closest('.scope button');
