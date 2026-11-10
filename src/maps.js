@@ -48,7 +48,7 @@ const defs = {
   },
   moss: {
     name: 'Mossway', w: 30, h: 30, base: '.', theme: 'out', edge: 'T', music: 'route', bg: 'field',
-    enc: { rate: 0.14, table: [['voltick', 2, 4, 30], ['mossnip', 2, 4, 30], ['coalcub', 3, 5, 22], ['gillby', 3, 4, 10], ['murklet', 4, 5, 8]] },
+    enc: { rate: 0.14, table: [['voltick', 2, 3, 30], ['mossnip', 2, 3, 30], ['coalcub', 2, 4, 22], ['gillby', 3, 4, 10], ['murklet', 3, 4, 8]] },
     ops: [
       ...border(30, 30),
       [',', 8, 22, 5, 5], [',', 17, 22, 9, 5], [',', 9, 14, 10, 5], [',', 2, 3, 10, 8], [',', 16, 7, 5, 4], [',', 25, 15, 3, 10],
@@ -60,6 +60,7 @@ const defs = {
     npcs: [
       { id: 'pip', name: 'Tamer Pip', look: 'pip', x: 10, y: 19, dir: 'down', script: 'trainer', sight: 2, trainer: { party: [['mossnip', 3], ['voltick', 4]], gold: 60, before: 'You look new! My Kith have been itching for a match.', after: 'Whoa. Spend your Sparks on the Lattice, I can tell you already have.' } },
       { id: 'rook', name: 'Tamer Rook', look: 'rook', x: 18, y: 3, dir: 'down', script: 'trainer', sight: 2, trainer: { party: [['coalcub', 5], ['murklet', 5]], gold: 90, before: 'Nobody gets to Brinecliff without getting past me.', after: 'Fine. The road\'s yours. If the rift ever clears, that is.' } },
+      { id: 'juno', name: 'Tamer Juno', look: 'girl', x: 21, y: 8, dir: 'right', script: 'trainer', sight: 2, trainer: { party: [['gillby', 4], ['coalcub', 5]], gold: 80, before: 'I caught mine by the pond. Bet yours can\'t swim!', after: 'Okay, okay. The cave east of here has tougher ones, if you\'re showing off.' } },
       { id: 'rift1', name: 'Static Rift', look: 'rift', x: 14, y: 2, script: 'rift', hide: 'key1' },
       { id: 'rift2', name: 'Static Rift', look: 'rift', x: 15, y: 2, script: 'rift', hide: 'key1' },
     ],
@@ -73,13 +74,14 @@ const defs = {
   },
   grotto: {
     name: 'Glimmer Grotto', w: 24, h: 20, base: '#', theme: 'cave', edge: '#', music: 'cave', bg: 'cave', dark: true, encAll: true,
-    enc: { rate: 0.075, table: [['pebblit', 5, 8, 40], ['murklet', 5, 8, 35], ['coalcub', 6, 8, 15], ['wispurr', 7, 8, 10]] },
+    enc: { rate: 0.09, table: [['pebblit', 5, 8, 40], ['murklet', 5, 8, 35], ['coalcub', 6, 8, 15], ['wispurr', 7, 8, 10]] },
     ops: [
       ['c', 10, 15, 4, 5], ['c', 3, 10, 18, 5], ['c', 3, 3, 4, 7], ['c', 3, 3, 10, 3], ['c', 17, 6, 4, 4], ['c', 14, 2, 6, 3],
       ['~', 15, 11, 3, 2], ['?R', 5, 8, 4, 10, 16, 5, 'c'], ['?K', 6, 5, 3, 3, 18, 12, 'c'], ['K', 14, 2], ['K', 19, 2], ['c', 13, 3], ['c', 10, 14, 4, 1],
     ],
     npcs: [
       { id: 'odo', name: 'Spelunker Odo', look: 'odo', x: 8, y: 11, dir: 'right', script: 'trainer', sight: 3, trainer: { party: [['pebblit', 7], ['pebblit', 8]], gold: 120, before: 'Shh! You\'ll wake the big one. ...Actually, let\'s battle. That\'ll wake it for sure.', after: 'The thing up north isn\'t right. It flickers. Be careful.' } },
+      { id: 'bex', name: 'Hunter Bex', look: 'hale', x: 5, y: 7, dir: 'left', script: 'trainer', sight: 2, trainer: { party: [['murklet', 8], ['wispurr', 8]], gold: 140, before: 'Crystals this bright draw Shade Kith like moths. And Tamers like me.', after: 'Shade folds to Volt and Ember. You worked that out fast.' } },
       { id: 'hollow', name: 'Hollowed Cragnaw', look: 'kith:cragnaw', x: 17, y: 3, dir: 'left', script: 'hollow', hide: 'key1' },
     ],
     chests: [{ id: 'g1', x: 4, y: 4, item: 'tonic', n: 3 }, { id: 'g2', x: 19, y: 7, item: 'sealx', n: 2 }, { id: 'g3', x: 19, y: 4, item: 'shard', n: 1 }],
@@ -122,6 +124,7 @@ const defs = {
     npcs: [
       { id: 'wren', name: 'Tamer Wren', look: 'wren', x: 15, y: 9, dir: 'down', script: 'trainer', sight: 2, trainer: { party: [['gillby', 12], ['brinelle', 13]], gold: 180, before: 'The marsh keeps what it catches. Let\'s see if it keeps you.', after: 'You swim well for a land Tamer.' } },
       { id: 'hale', name: 'Tamer Hale', look: 'hale', x: 25, y: 6, dir: 'up', script: 'trainer', sight: 2, trainer: { party: [['wispurr', 13], ['stagvolt', 13], ['noxwing', 14]], gold: 220, before: 'The Spire hums at night. My Kith hum back. Want to hear?', after: 'Go on, then. Somebody has to shut that thing up.' } },
+      { id: 'sorrel', name: 'Tamer Sorrel', look: 'pip', x: 21, y: 7, dir: 'right', script: 'trainer', sight: 2, trainer: { party: [['sporelord', 13], ['finfathom', 14]], gold: 240, before: 'Nobody walks the Spire road without a warm-up.', after: 'Warmed up? Good. You will need it.' } },
       { id: 'gate1', name: 'Static Gate', look: 'rift', x: 30, y: 4, script: 'gate', hide: 'maris' },
       { id: 'gate2', name: 'Static Gate', look: 'rift', x: 30, y: 5, script: 'gate', hide: 'maris' },
     ],
@@ -133,7 +136,7 @@ const defs = {
   },
   spire: {
     name: 'Static Spire', w: 22, h: 26, base: 'X', theme: 'spire', edge: 'X', music: 'spire', bg: 'spire', encAll: true,
-    enc: { rate: 0.065, table: [['noxwing', 15, 18, 28], ['cragnaw', 15, 18, 24], ['stagvolt', 15, 18, 24], ['magmander', 16, 18, 12], ['phantigre', 17, 19, 12]] },
+    enc: { rate: 0.08, table: [['noxwing', 15, 18, 28], ['cragnaw', 15, 18, 24], ['stagvolt', 15, 18, 24], ['magmander', 16, 18, 12], ['phantigre', 17, 19, 12]] },
     ops: [
       ['p', 9, 20, 4, 6], ['p', 3, 15, 16, 5], ['p', 3, 8, 3, 7], ['p', 16, 8, 3, 7], ['p', 3, 5, 16, 3], ['p', 10, 4, 2, 1], ['p', 7, 1, 8, 3],
       ['?P', 11, 26, 3, 1, 16, 20, 'p'],
@@ -141,6 +144,7 @@ const defs = {
     npcs: [
       { id: 'aco1', name: 'Null Acolyte', look: 'acolyte', x: 4, y: 9, dir: 'down', script: 'trainer', sight: 3, trainer: { party: [['noxwing', 17], ['cragnaw', 17]], gold: 300, before: 'The Lattice is a cage. We are only opening the door.', after: 'It... it doesn\'t matter. The Maw is already awake.' } },
       { id: 'aco2', name: 'Null Acolyte', look: 'acolyte', x: 17, y: 9, dir: 'down', script: 'trainer', sight: 3, trainer: { party: [['phantigre', 17], ['magmander', 18]], gold: 300, before: 'No further, Tamer. Your Kith will thank us when they are free.', after: 'Free... of what? I can\'t remember what we wanted.' } },
+      { id: 'aco3', name: 'Null Adept', look: 'acolyte', x: 9, y: 5, dir: 'right', script: 'trainer', sight: 2, trainer: { party: [['stagvolt', 19], ['noxwing', 19], ['phantigre', 20]], gold: 400, before: 'The Maw is hungry and you are in its doorway.', after: 'Then go in. See what a hole in the world looks like.' } },
       { id: 'font', name: 'Lattice Font', look: 'font', x: 15, y: 17, script: 'font' },
       { id: 'null', name: 'Nullmaw', look: 'kith:nullmaw', x: 10, y: 2, dir: 'down', script: 'nullmaw', hide: 'clear' },
     ],

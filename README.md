@@ -17,6 +17,7 @@ No install, no build step, no asset files. Every sprite, tile, sound and song is
   - lock nodes that need Lattice Key I or II, earned from bosses;
   - Ascension nodes, where a Kith of the right level takes its next form.
 - **24 Kith** across 10 families, including three starters with three forms each.
+- **Eleven rival Tamers** who challenge you on sight.
 - **A short story** with two Wardens, a hollowed cave boss and something waiting at the top of the Spire.
 
 ## Controls
@@ -37,6 +38,17 @@ node server.js
 ```
 
 Then open http://localhost:8131. Add `?gallery` to the URL to see every Kith sprite on one sheet.
+
+## Playthrough bot
+
+`tools/bot.js` plays the whole game from a new save to the credits through the real input and menu code: it walks with held keys, fights through the battle menus, binds Kith, spends Sparks and rests at Menders. Use it after any balance or map change.
+
+```js
+const bot = await import('/tools/bot.js');
+await bot.play('embrit'); // or 'puddlop', 'sprigit'
+```
+
+It returns battles, losses, and the party's levels at each milestone, and fails loudly if a path, script or battle ever gets stuck.
 
 ## Files
 

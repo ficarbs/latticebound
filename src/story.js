@@ -78,8 +78,8 @@ const SCRIPTS = {
   async hollow(n) {
     await say('The Cragnaw flickers like a bad memory. Lines of static run where its eyes should be.');
     if ((await choose(['Fight', 'Back away'], { prompt: 'It hasn\'t noticed you yet.' })) !== 0) return;
-    const boss = makeKith('cragnaw', 9);
-    boss.boss = 1.5; boss.name = 'Hollowed Cragnaw'; boss.hp = Math.round(boss.hp * 1.5);
+    const boss = makeKith('cragnaw', 10);
+    boss.boss = 1.7; boss.name = 'Hollowed Cragnaw'; boss.hp = Math.round(boss.hp * 1.7);
     const r = await startBattle({ foes: [boss], kind: 'boss', name: 'Hollowed Cragnaw', gold: 200 });
     if (r !== 'win') return;
     setFlag('key1');
@@ -94,7 +94,7 @@ const SCRIPTS = {
     if (flag('maris')) return say('The gate past Saltmarsh will open for you now. Whatever sits at the top of that Spire, it is eating the Lattice from the far end.', who);
     await say('So the vale finally sent someone. I keep the second Key, and I do not hand it to Tamers who cannot hold it.', who);
     if ((await choose(['I\'m ready', 'Not yet'], { prompt: 'Face the Warden of Brinecliff?', name: who })) !== 0) return;
-    const r = await startBattle({ foes: [makeKith('gillby', 12), makeKith('noxwing', 13), makeKith('finfathom', 15)], kind: 'trainer', name: who, gold: 500 });
+    const r = await startBattle({ foes: [makeKith('gillby', 13), makeKith('noxwing', 14), makeKith('finfathom', 16)], kind: 'trainer', name: who, gold: 500 });
     if (r !== 'win') return;
     setFlag('maris');
     await say('Ha! The tide goes out for you. Take it.', who);
@@ -128,8 +128,8 @@ const SCRIPTS = {
   async nullmaw() {
     await say('At the top of the Spire the Lattice simply stops. In the gap, something opens far too many teeth.');
     if ((await choose(['Step forward', 'Not yet'], { prompt: 'There is no way around it.' })) !== 0) return;
-    const boss = makeKith('nullmaw', 22);
-    boss.boss = 1.6; boss.hp = Math.round(boss.hp * 1.6);
+    const boss = makeKith('nullmaw', 24);
+    boss.boss = 1.8; boss.hp = Math.round(boss.hp * 1.8);
     const r = await startBattle({ foes: [boss], kind: 'boss', name: 'Nullmaw', gold: 2000 });
     if (r !== 'win') return;
     setFlag('clear');

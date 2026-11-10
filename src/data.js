@@ -86,7 +86,7 @@ export const SPECIES = {
   magmander: { name: 'Magmander', learn: 'flamefang' },
   wispurr: S('Wispurr', 'shade', [34, 24, 11, 7, 12], 'phantigre', 'A cat-shaped draught. Purrs like a far-off bell.'),
   phantigre: { name: 'Phantigre', learn: 'hex' },
-  nullmaw: { name: 'Nullmaw', el: 'shade', b: [150, 60, 26, 20, 14], stage: 3, innate: ['duskclaw', 'hex', 'eclipse', 'unnerve'], blurb: 'A hole in the Lattice that learned to bite.' },
+  nullmaw: { name: 'Nullmaw', el: 'shade', b: [180, 80, 29, 22, 15], stage: 3, innate: ['duskclaw', 'hex', 'eclipse', 'unnerve'], blurb: 'A hole in the Lattice that learned to bite.' },
 };
 SPECIES.flarevane.to = 'solkharn';
 SPECIES.brinelle.to = 'maelorca';
@@ -122,6 +122,6 @@ export const ITEMS = {
 };
 for (const id in ITEMS) ITEMS[id].id = id;
 
-export const xpNeed = lv => 16 + lv * 10;
+export const xpNeed = lv => Math.round(24 + lv * 10 + lv * lv * 0.9);
 export const ASCEND_LV = { 1: 10, 2: 22 };
 export const STAT_NAMES = { hp: 'HP', en: 'EN', atk: 'ATK', def: 'DEF', spd: 'SPD' };
