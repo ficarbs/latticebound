@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0c0a1c">
+  <meta name="description" content="Latticebound: an original pixel-art Kith-taming RPG where every creature grows across one shared node Lattice.">
+  <title>Latticebound</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Press+Start+2P&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="rotate"><div>⟳</div>Rotate your device to landscape</div>
+  <div id="stage">
+    <div id="game">
+      <canvas id="view" width="320" height="180"></canvas>
+      <div id="ui">
+        <div id="hud" class="pn hidden"></div>
+        <div id="banner"></div>
+        <div id="battle-ui" class="hidden"></div>
+        <div id="lattice-ui" class="hidden"></div>
+        <div id="floats"></div>
+        <div id="screens"></div>
+        <div id="evo" class="hidden"><img alt=""><div></div></div>
+        <div id="ending" class="hidden"></div>
+        <div id="title">
+          <div class="t-logo">LATTICE<span>BOUND</span></div>
+          <div class="t-sub">A KITH TAMER'S ROAD</div>
+          <div class="t-card scope">
+            <button id="btn-new">New Game</button>
+            <button id="btn-continue" disabled>Continue</button>
+          </div>
+          <div class="t-keys"><span><kbd>←↑↓→</kbd> Move</span><span><kbd>Z</kbd> Confirm / talk</span><span><kbd>X</kbd> Menu / back</span><span><kbd>Q</kbd><kbd>E</kbd> Switch Kith on the Lattice</span></div>
+        </div>
+        <div id="dialog" class="pn hidden"><div class="d-name hidden"></div><div class="d-text"></div><div class="d-more">▼</div><div class="d-opts scope hidden"></div></div>
+        <div id="toasts"></div>
+        <div id="touch">
+          <div class="pad">
+            <button data-act="up" class="u">▲</button><button data-act="left" class="l">◀</button>
+            <button data-act="right" class="r">▶</button><button data-act="down" class="d">▼</button>
+          </div>
+          <div class="ab"><button data-act="b" class="b">X</button><button data-act="a" class="a">Z</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
