@@ -77,6 +77,7 @@ export function uiTick(dt) {
   // An on-screen Back for whatever menu owns input, so touch players are never stuck without the X key.
   const sc = D.wait ? null : topScope();
   backEl.classList.toggle('hidden', !(sc && sc._cancel));
+  if (G.dropStick && (uiActive() || G.mode === 'battle')) G.dropStick();
   document.body.classList.toggle('ui-open', uiActive() || G.mode === 'title' || G.mode === 'battle');
 }
 function advance() {

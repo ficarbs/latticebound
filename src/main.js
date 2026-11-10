@@ -103,9 +103,28 @@ function touchControls() {
   document.body.classList.add('touch');
   for (const b of pad.querySelectorAll('[data-act]')) {
     const a = b.dataset.act;
-    b.addEventListener('pointerdown', e => { e.preventDefault(); b.setPointerCapture(e.pointerId); setVirtual(a, true); });
-    for (const ev of ['pointerup', 'pointercancel']) b.addEventListener(ev, () => setVirtual(a, false));
+    b.addEventListener('pointerdown', e => { e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch (err) { /* pointer already gone */ } b.classList.add('on'); setVirtual(a, true); });
+    for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(ev, () => { b.classList.remove('on'); setVirtual(a, false); });
   }
+  // Joystick: a thumb zone with a ring and a knob. Movement is tile-based, so it reads as four directions.
+  const zone = pad.querySelector('.stick'), ring = zone.querySelector('.ring'), knob = zone.querySelector('.knob');
+  let id = null, cur = null;
+  const set = d => { if (d === cur) return; if (cur) setVirtual(cur, false); cur = d; if (d) setVirtual(d, true); };
+  const move = e => {
+    const r = ring.getBoundingClientRect(), rad = r.width / 2;
+    let dx = e.clientX - (r.left + rad), dy = e.clientY - (r.top + rad);
+    const len = Math.hypot(dx, dy), k = len > rad ? rad / len : 1;
+    dx *= k; dy *= k;
+    knob.style.transform = `translate(${(dx / rad) * 34}px, ${(dy / rad) * 34}px)`;
+    set(len < rad * 0.28 ? null : Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down');
+  };
+  const end = e => { if (e.pointerId !== id) return; id = null; set(null); knob.style.transform = ''; zone.classList.remove('on'); };
+  zone.addEventListener('pointerdown', e => { e.preventDefault(); if (id !== null) return; id = e.pointerId; try { zone.setPointerCapture(id); } catch (err) { /* pointer already gone */ } zone.classList.add('on'); move(e); });
+  zone.addEventListener('pointermove', e => { if (e.pointerId === id) move(e); });
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) zone.addEventListener(ev, end);
+  // If a menu opens mid-drag the stick is hidden, so let go of whatever it was holding.
+  addEventListener('blur', () => { id = null; set(null); knob.style.transform = ''; });
+  G.dropStick = () => { if (cur) { set(null); knob.style.transform = ''; zone.classList.remove('on'); id = null; } };
 }
 
 const title = () => {

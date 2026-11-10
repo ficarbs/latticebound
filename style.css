@@ -147,8 +147,10 @@ kbd { font-family: var(--px); font-size: 9px; background: var(--panel2); color: 
 #touch { display: none; }
 body.touch #touch { display: block; } body.touch.ui-open #touch { display: none; }
 #touch button { position: absolute; width: 64px; height: 64px; border-radius: 12px; background: rgba(29, 27, 58, .6); border: 3px solid rgba(244, 236, 216, .55); text-align: center; font-family: var(--px); font-size: 16px; pointer-events: auto; }
-.pad { position: absolute; left: 24px; bottom: 90px; width: 192px; height: 192px; }
-.pad .u { left: 64px; top: 0; } .pad .d { left: 64px; top: 128px; } .pad .l { left: 0; top: 64px; } .pad .r { left: 128px; top: 64px; }
+.stick { position: absolute; left: 0; bottom: 0; width: 300px; height: 300px; pointer-events: auto; touch-action: none; }
+.stick .ring { position: absolute; left: 44px; bottom: 70px; width: 150px; height: 150px; border-radius: 50%; background: rgba(29, 27, 58, .45); border: 3px solid rgba(244, 236, 216, .45); }
+.stick .knob { position: absolute; left: 50%; top: 50%; width: 66px; height: 66px; margin: -33px 0 0 -33px; border-radius: 50%; background: rgba(244, 236, 216, .7); border: 3px solid rgba(14, 12, 32, .7); }
+.stick.on .ring { border-color: rgba(255, 216, 102, .8); } .stick.on .knob { background: rgba(255, 216, 102, .9); }
 .ab { position: absolute; right: 24px; bottom: 100px; width: 170px; height: 130px; } .ab .a { right: 0; top: 0; width: 80px !important; height: 80px !important; border-radius: 50% !important; } .ab .b { left: 0; bottom: 0; border-radius: 50% !important; }
 #rotate { display: none; position: fixed; inset: 0; z-index: 9; background: #0c0a1c; align-items: center; justify-content: center; flex-direction: column; font-family: var(--px); font-size: 12px; gap: 16px; text-align: center; }
 #rotate div { font-size: 40px; }
@@ -179,3 +181,7 @@ b { font-weight: 600; }
 #back:active { background: var(--gold); color: var(--ink); }
 body.touch #back { font-size: 13px; padding: 13px 16px; }
 .menu { top: 62px; }
+
+* { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+#touch button { outline: none; touch-action: none; } #touch button.on { background: rgba(255, 216, 102, .55); }
+button:focus { outline: none; }

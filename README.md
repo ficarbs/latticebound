@@ -23,9 +23,9 @@ No install, no build step, no asset files. Every sprite, tile, sound and song is
 
 | Action | Keyboard | Touch |
 | --- | --- | --- |
-| Move / menu cursor | Arrow keys or WASD | D-pad |
-| Confirm / talk / interact | Z, Enter or Space | Z button, or tap the option |
-| Menu / back | X, Esc or Backspace | X button |
+| Move / menu cursor | Arrow keys or WASD | Joystick (bottom left) |
+| Confirm / talk / interact | Z, Enter or Space | Z button; in menus tap an option to select it, tap again to confirm |
+| Menu / back | X, Esc or Backspace | X button; ✕ Back in menus |
 | Switch Kith on the Lattice | Q / E | tap the Kith tabs |
 
 Menus, battle commands and Lattice nodes can all be clicked or tapped directly. The game saves automatically when you change maps, finish a battle, rest, or close the Lattice, and from the menu.
