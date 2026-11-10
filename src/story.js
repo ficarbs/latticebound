@@ -24,6 +24,39 @@ async function rest(text) {
   await say(text);
 }
 
+// After the story the Wardens fight again, at a strength that follows how deep you have gone.
+const REMATCH = {
+  maris: ['finfathom', 'brinelle', 'noxwing', 'gillby', 'maelorca'],
+  kael: ['magmander', 'cragnaw', 'flarevane', 'coalcub', 'solkharn'],
+  yuna: ['stagvolt', 'phantigre', 'noxwing', 'wispurr', 'solkharn'],
+  sable: ['sporelord', 'phantigre', 'maelorca', 'solkharn', 'eldergrove'],
+};
+async function rematch(n) {
+  const who = n.name, tier = flag('unlit') ? 3 : flag('dg12') ? 2 : 1, lv = [0, 54, 76, 100][tier], key = `rm_${n.id}_${tier}`;
+  const pick = await choose(['Rematch', 'Just talk'], { prompt: `${who} is ready for you again. Team level ${lv}.${flag(key) ? ' (Already beaten at this strength.)' : ''}`, name: who });
+  if (pick !== 0) return false;
+  const foes = REMATCH[n.id].slice(tier === 1 ? 1 : 0).filter((sp, i) => tier > 1 || SPECIES[sp].stage > 1 || i > 2).map((sp, i, a) => {
+    const k = makeKith(sp, lv - (a.length - 1 - i));
+    if (i === a.length - 1) { k.boss = 1 + tier * 0.5; k.hp = statsOf(k).hp; if (tier > 1) k.traits = { enrage: 0.4, double: tier === 3 }; }
+    return k;
+  });
+  const r = await startBattle({ foes, kind: 'trainer', name: who, gold: lv * 60 });
+  if (r !== 'win') return true;
+  if (!flag(key)) {
+    setFlag(key);
+    await say(tier === 3 ? 'There is nothing left I can teach you. Nothing left anyone can.' : 'Stronger than last time. Go deeper, then come back. I will be stronger too.', who);
+    await gift('shard', tier * 3, who);
+    await gift('elixir', tier * 2, who);
+    if (tier === 3 && Object.keys(REMATCH).every(id => flag(`rm_${id}_3`)) && !flag('crest')) {
+      setFlag('crest');
+      await gift('crest', 1);
+      await say('All four Wardens, at their strongest. The Crest is yours, and so is the title that goes with it.');
+    }
+  } else await say('Again, and again you win. Good.', who);
+  saveGame();
+  return true;
+}
+
 const SCRIPTS = {
   async talk(n) { for (const line of n.lines) await say(line, n.name); },
 
@@ -47,6 +80,7 @@ const SCRIPTS = {
       saveGame();
       return;
     }
+    if (flag('clear') && (await rematch(n))) return;
     if (flag('unlit')) return say('You went all the way down. I have studied the Lattice for forty years and I do not know what you are any more. Thank you.', who);
     if (flag('clear')) return say('The hum is clean again, but the Spire has a stair now, going down. The Hollow Deep. Whatever fed the Nullmaw is at the bottom, and it will take Kith near Lv 100 to face it.', who);
     if (flag('yuna')) return say('Four Wardens, four Waygates. The Spire is all that is left. Finish it.', who);
@@ -85,6 +119,7 @@ const SCRIPTS = {
 
   async kael(n) {
     const who = n.name;
+    if (flag('clear') && (await rematch(n))) return;
     if (flag('kael')) return say('The pass is open. Mind the lava, mind Yuna, and mind whatever lives in that tower.', who);
     await say('Maris sent you, then. She tests whether you can hold a Key. I test whether you can take a hit.', who);
     if ((await choose(['Try me', 'Not yet'], { prompt: 'Face the Warden of Cindermere?', name: who })) !== 0) return;
@@ -98,6 +133,7 @@ const SCRIPTS = {
   },
   async yuna(n) {
     const who = n.name;
+    if (flag('clear') && (await rematch(n))) return;
     if (flag('yuna')) return say('The Spire gate is open. I have watched that tower grow for a year. Go and end it.', who);
     await say('Three Wardens let you pass. I am the last door, and I am the one that stays shut.', who);
     if ((await choose(['Open it', 'Not yet'], { prompt: 'Face the Warden of Galehaven?', name: who })) !== 0) return;
@@ -152,6 +188,7 @@ const SCRIPTS = {
 
   async maris(n) {
     const who = n.name;
+    if (flag('clear') && (await rematch(n))) return;
     if (flag('maris')) return say('The gate past Saltmarsh will open for you now. Kael holds Cindermere and Yuna holds Galehaven. Neither will wave you through.', who);
     await say('So the vale finally sent someone. I keep the second Key, and I do not hand it to Tamers who cannot hold it.', who);
     if ((await choose(['I\'m ready', 'Not yet'], { prompt: 'Face the Warden of Brinecliff?', name: who })) !== 0) return;

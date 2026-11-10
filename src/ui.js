@@ -3,8 +3,8 @@
 import { G, sleep, clamp } from './state.js';
 import { hit, rep, down } from './input.js';
 import { sfx, audio, setMuted } from './audio.js';
-import { SPECIES, SKILLS, ITEMS, EL, STARTERS, xpNeed, strongVs } from './data.js';
-import { statsOf, applyItem, shiftForm, chartOf, formLv, needOk, needText, tierOpen, canUnlock, formsOf } from './kith.js';
+import { SPECIES, SKILLS, ITEMS, EL, STARTERS, CHARTS, xpNeed, strongVs } from './data.js';
+import { statsOf, applyItem, shiftForm, chartOf, formLv, needOk, needText, tierOpen, canUnlock, formsOf, give, syncDex } from './kith.js';
 import { kithIcon } from './kithart.js';
 import { saveGame } from './save.js';
 import { openLattice } from './lattice.js';
@@ -133,7 +133,7 @@ function drawHud() {
   h.classList.toggle('hidden', !show);
   if (!show) return;
   const s = statsOf(k), sparks = G.p.party.reduce((n, q) => n + q.sparks, 0);
-  h.innerHTML = `<img src="${kithIcon(k.sp)}"><div><div class="h-top"><b>${k.name}</b><span>Lv ${k.lv}</span></div>${bar('hp', k.hp / s.hp)}</div>${sparks ? `<div class="h-spark">✦ ${sparks}<small>X: menu</small></div>` : ''}`;
+  h.innerHTML = `<img src="${kithIcon(k.sp, 'front', k.pr)}"><div><div class="h-top"><b>${k.name}</b><span>Lv ${k.lv}</span></div>${bar('hp', k.hp / s.hp)}</div>${sparks ? `<div class="h-spark">✦ ${sparks}<small>X: menu</small></div>` : ''}`;
 }
 
 function screen(cls, title) {
@@ -145,7 +145,7 @@ function screen(cls, title) {
 }
 function kithRow(k) {
   const s = statsOf(k), sp = SPECIES[k.sp];
-  return `<img src="${kithIcon(k.sp)}" class="${k.hp <= 0 ? 'out' : ''}"><div class="k-info"><div class="k-top"><b>${k.name}</b><span>Lv ${k.lv}</span></div>${bar('hp', k.hp / s.hp)}<div class="k-sub">${elTag(sp.el)}<span>${Math.max(0, k.hp)}/${s.hp} HP</span>${k.sparks ? `<span class="spk">✦ ${k.sparks}</span>` : ''}</div></div>`;
+  return `<img src="${kithIcon(k.sp, 'front', k.pr)}" class="${k.hp <= 0 ? 'out' : ''}"><div class="k-info"><div class="k-top"><b>${k.name}${k.pr ? ' <i class="pr">✧</i>' : ''}</b><span>Lv ${k.lv}</span></div>${bar('hp', k.hp / s.hp)}<div class="k-sub">${elTag(sp.el)}<span>${Math.max(0, k.hp)}/${s.hp} HP</span>${k.sparks ? `<span class="spk">✦ ${k.sparks}</span>` : ''}</div></div>`;
 }
 export function skillLine(id) {
   const sk = SKILLS[id];
@@ -153,7 +153,7 @@ export function skillLine(id) {
 }
 function kithDetail(k) {
   const s = statsOf(k), sp = SPECIES[k.sp];
-  return `<div class="kd-top"><img src="${kithIcon(k.sp)}"><div><b>${k.name}</b><div>${elTag(sp.el)} Lv ${k.lv}</div><div class="dim">Strong vs ${strongVs(sp.el).map(e => EL[e].name).join(', ')}</div></div></div>
+  return `<div class="kd-top"><img src="${kithIcon(k.sp, 'front', k.pr)}"><div><b>${k.name}</b><div>${elTag(sp.el)} Lv ${k.lv}</div><div class="dim">Strong vs ${strongVs(sp.el).map(e => EL[e].name).join(', ')}</div></div></div>
     <p class="dim">${sp.blurb}</p><p class="rite">Form Lv ${formLv(k, k.sp)} · ${formsOf(k).length}/${chartOf(k).length + 1} forms</p>
     <div class="stats"><span>HP <b>${Math.max(0, k.hp)}/${s.hp}</b></span><span>EN <b>${k.en}/${s.en}</b></span><span>ATK <b>${s.atk}</b></span><span>DEF <b>${s.def}</b></span><span>SPD <b>${s.spd}</b></span><span>Sparks <b class="spk">✦ ${k.sparks}</b></span></div>
     ${bar('xp', k.xp / xpNeed(k.lv))}<div class="dim">${xpNeed(k.lv) - k.xp} XP to next level · ${k.nodes.length} nodes lit</div>
@@ -223,7 +223,7 @@ export function formScreen(k) {
         const sp = SPECIES[row.form], have = k.forms.includes(row.form), ready = !have && canUnlock(k, row);
         const b = document.createElement('button');
         b.className = 'k-row f-row' + (row.form === (keep || k.sp) ? ' sel' : ''); b._row = row;
-        b.innerHTML = `<img src="${kithIcon(row.form)}" class="${have || ready ? '' : 'out'}"><div class="k-info"><div class="k-top"><b>${have || ready ? sp.name : '???'}</b><span>${row.form === k.sp ? 'ACTIVE' : have ? 'Lv ' + formLv(k, row.form) : ready ? 'READY' : 'locked'}</span></div><div class="k-sub">${elTag(sp.el)}</div></div>`;
+        b.innerHTML = `<img src="${kithIcon(row.form, 'front', k.pr)}" class="${have || ready ? '' : 'out'}"><div class="k-info"><div class="k-top"><b>${have || ready ? sp.name : '???'}</b><span>${row.form === k.sp ? 'ACTIVE' : have ? 'Lv ' + formLv(k, row.form) : ready ? 'READY' : 'locked'}</span></div><div class="k-sub">${elTag(sp.el)}</div></div>`;
         b.onclick = async () => {
           if (row.form === k.sp) return toast('Already in this form.');
           if (!have && !ready) { sfx('deny'); return toast(tierOpen(k, row) ? 'Requirements not met yet.' : `Light Ascension ${row.tier === 1 ? 'I' : 'II'} on the Lattice first.`); }
@@ -238,9 +238,9 @@ export function formScreen(k) {
       cur.classList.add('sel'); s._onsel(cur);
     };
     s._onsel = b => {
-      const row = b._row, sp = SPECIES[row.form], have = k.forms.includes(row.form);
+      const row = b._row, sp = SPECIES[row.form], have = k.forms.includes(row.form), known = have || canUnlock(k, row) || (G.p.dex || {})[row.form];
       const needs = row.tier === 0 ? '<p class="dim">The form it was born in.</p>' : `<div class="needs">${[{ ok: tierOpen(k, row), text: `Ascension ${row.tier === 1 ? 'I' : 'II'} lit on the Lattice` }, ...row.need.map(r => ({ ok: needOk(k, r), text: needText(k, r) }))].map(n => `<div class="${n.ok ? 'ok' : 'no'}">${n.ok ? '✓' : '·'} ${n.text}</div>`).join('')}</div>`;
-      side.innerHTML = `<div class="kd-top"><img src="${kithIcon(row.form)}"><div><b>${sp.name}</b><div>${elTag(sp.el)}</div><div class="dim">Strong vs ${strongVs(sp.el).map(e => EL[e].name).join(', ')}</div></div></div>
+      side.innerHTML = `<div class="kd-top"><img src="${kithIcon(row.form, 'front', k.pr)}" class="${known ? '' : 'out'}"><div><b>${known ? sp.name : '???'}</b><div>${elTag(sp.el)}</div><div class="dim">Strong vs ${strongVs(sp.el).map(e => EL[e].name).join(', ')}</div></div></div>
         <p class="dim">${sp.blurb}</p>
         <div class="stats"><span>HP <b>${sp.b[0]}</b></span><span>EN <b>${sp.b[1]}</b></span><span>ATK <b>${sp.b[2]}</b></span><span>DEF <b>${sp.b[3]}</b></span><span>SPD <b>${sp.b[4]}</b></span><span>base</span></div>
         ${sp.learn ? `<p>Teaches <b class="gold">${SKILLS[sp.learn].name}</b> for good.</p>` : ''}
@@ -306,7 +306,7 @@ export function bagScreen(mode = 'manage') {
     s._cancel = () => { sfx('back'); close(null); };
     async function use(id) {
       const it = ITEMS[id];
-      if (it.key) return toast('Use it from the Lattice, at a lock node.');
+      if (it.key) return toast(id.startsWith('key') ? 'Use it from the Lattice, at a lock node.' : it.desc);
       if (it.bind != null) return mode === 'battle' ? (sfx('ok'), close({ id })) : toast('Bind Seals only work in battle.');
       if (mode === 'battle' && it.spark) return toast('Not in the middle of a fight.');
       sfx('ok');
@@ -386,11 +386,44 @@ export async function travelMenu() {
   return true;
 }
 
+// The Index: every form in the world, what you have met and what your Kith have worn, with rewards for filling it.
+const DEX_REWARDS = [[8, 'shard', 3], [14, 'elixir', 5], [19, 'shard', 6], [23, 'shard', 10], [25, 'charm', 1]];
+export function indexScreen() {
+  return new Promise(res => {
+    syncDex();
+    const dex = G.p.dex, all = Object.values(SPECIES).filter(sp => sp.id !== 'unlit');
+    const owned = all.filter(sp => dex[sp.id] === 2).length, seen = all.filter(sp => dex[sp.id]).length;
+    for (const [n, id, qty] of DEX_REWARDS) if (owned >= n && !G.p.flags['ix' + n]) { G.p.flags['ix' + n] = 1; give(id, qty); sfx('item'); toast(`Index reward for ${n} forms: ${qty > 1 ? qty + ' × ' : ''}${ITEMS[id].name}!`); }
+    const next = DEX_REWARDS.find(([n]) => owned < n);
+    const s = screen('index', `KITH INDEX · ${owned}/${all.length} FORMS WORN · ${seen} MET`), list = s.querySelector('.s-list'), side = s.querySelector('.s-side');
+    for (const sp of all) {
+      const st = dex[sp.id] || 0, b = document.createElement('button');
+      b.className = 'k-row f-row'; b._sp = sp;
+      b.innerHTML = `<img src="${kithIcon(sp.id)}" class="${st ? '' : 'out'}"><div class="k-info"><div class="k-top"><b>${st ? sp.name : '???'}</b><span>${st === 2 ? 'WORN' : st ? 'met' : ''}</span></div><div class="k-sub">${st ? elTag(sp.el) : ''}</div></div>`;
+      b.onclick = () => {};
+      list.append(b);
+    }
+    s._onsel = b => {
+      const sp = b._sp, st = dex[sp.id] || 0;
+      const where = Object.values(MAPS).filter(m => m.enc && !m.deep && m.enc.table.some(e => e[0] === sp.id)).map(m => m.name);
+      const charts = Object.keys(CHARTS).filter(base => CHARTS[base].some(r => r.form === sp.id)).map(base => SPECIES[base].name);
+      side.innerHTML = st ? `<div class="kd-top"><img src="${kithIcon(sp.id)}"><div><b>${sp.name}</b><div>${elTag(sp.el)}</div><div class="dim">Strong vs ${strongVs(sp.el).map(e => EL[e].name).join(', ')}</div></div></div>
+        <p class="dim">${sp.blurb}</p>
+        <div class="stats"><span>HP <b>${sp.b[0]}</b></span><span>EN <b>${sp.b[1]}</b></span><span>ATK <b>${sp.b[2]}</b></span><span>DEF <b>${sp.b[3]}</b></span><span>SPD <b>${sp.b[4]}</b></span><span>base</span></div>
+        ${where.length ? `<p>Wild in ${where.join(', ')}.</p>` : ''}${charts.length ? `<p>A form on the charts of ${charts.join(', ')}.</p>` : ''}
+        <p class="rite">${next ? `Next reward at ${next[0]} forms worn.` : 'Index complete.'}</p>`
+        : `<p class="dim">Not met yet.</p><p class="rite">${next ? `Next reward at ${next[0]} forms worn.` : ''}</p>`;
+    };
+    s._cancel = () => { sfx('back'); s.remove(); res(); };
+    list.firstChild.classList.add('sel'); s._onsel(list.firstChild);
+  });
+}
+
 function menuPanel() {
   return new Promise(res => {
     const m = document.createElement('div');
     m.className = 'menu scope pn';
-    const items = [['kith', 'Kith'], ['lattice', 'Lattice'], ['bag', 'Bag'], ['travel', 'Travel'], ['save', 'Save'], ['sound', audio.muted ? 'Sound: off' : 'Sound: on'], ['close', 'Close']];
+    const items = [['kith', 'Kith'], ['lattice', 'Lattice'], ['bag', 'Bag'], ['index', 'Index'], ['travel', 'Travel'], ['save', 'Save'], ['sound', audio.muted ? 'Sound: off' : 'Sound: on'], ['close', 'Close']];
     m.innerHTML = `<div class="m-gold">${G.p.gold} G</div>`;
     for (const [id, label] of items) {
       const b = document.createElement('button');
@@ -415,6 +448,7 @@ export async function openMenu() {
         if (!G.p.party.length) { toast('No Kith yet.'); continue; }
         return openLattice(G.p.party.find(k => k.sparks) || G.p.party[0]);
       } else if (c === 'bag') await bagScreen('manage');
+      else if (c === 'index') await indexScreen();
       else if (c === 'travel') { if (await travelMenu()) return; }
       else if (c === 'save') toast(saveGame() ? 'Game saved.' : 'Could not save here.');
       else if (c === 'sound') setMuted(!audio.muted);
@@ -428,15 +462,16 @@ export async function evolveScene(k, to) {
   const old = k.name;
   ov.classList.remove('hidden');
   cap.textContent = `${old} is ascending…`;
-  img.src = kithIcon(from);
+  const pr = k.pr;
+  img.src = kithIcon(from, 'front', pr);
   sfx('evolve');
   for (let i = 0; i < 16; i++) {
-    img.src = kithIcon(i % 2 ? to : from);
+    img.src = kithIcon(i % 2 ? to : from, 'front', pr);
     img.classList.toggle('glow', i % 2 === 0);
     await sleep(Math.max(0.05, 0.26 - i * 0.016));
   }
   shiftForm(k, to);
-  img.src = kithIcon(to); img.classList.remove('glow');
+  img.src = kithIcon(to, 'front', pr); img.classList.remove('glow');
   ov.classList.add('flash');
   sfx('fanfare');
   cap.textContent = '';
@@ -469,7 +504,7 @@ export async function ending(deep) {
     ${line('Forms discovered', `${forms.size} of ${Object.keys(SPECIES).length - 1}`)}
     ${line('Lattice nodes lit', all.reduce((n, k) => n + k.nodes.length, 0))}
     <h3>YOUR PARTY</h3>
-    <div class="cr-cast">${p.party.map(k => `<div><img src="${kithIcon(k.sp)}"><b>${k.name}</b><small>Lv ${k.lv}</small></div>`).join('')}</div>
+    <div class="cr-cast">${p.party.map(k => `<div><img src="${kithIcon(k.sp, 'front', k.pr)}"><b>${k.name}</b><small>Lv ${k.lv}</small></div>`).join('')}</div>
     <h3>THE KITH</h3>
     <div class="cr-cast small">${cast.map(s => `<div><img src="${kithIcon(s.id)}" class="${forms.has(s.id) ? '' : 'out'}"><small>${forms.has(s.id) ? s.name : '???'}</small></div>`).join('')}</div>
     <h3>THE WARDENS</h3>

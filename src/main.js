@@ -108,7 +108,11 @@ function touchControls() {
   }
 }
 
-const title = () => showTitle({ canContinue: hasSave(), onNew: () => begin(newPlayer()), onContinue: () => begin(loadSave() || newPlayer()) });
+const title = () => {
+  const sv = loadSave(), f = (sv && sv.flags) || {};
+  $('#title .t-sub').textContent = f.crest ? '★ LATTICE WARDEN ★' : f.unlit ? '★ EVERY NODE LIT' : "A KITH TAMER'S ROAD";
+  showTitle({ canContinue: hasSave(), onNew: () => begin(newPlayer()), onContinue: () => begin(loadSave() || newPlayer()) });
+};
 // After the credits: save, and hand the player back to the title screen with Continue ready.
 G.toTitle = async () => {
   saveGame();

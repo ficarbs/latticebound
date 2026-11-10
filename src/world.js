@@ -5,7 +5,7 @@ import { MAPS } from './maps.js';
 import { drawGround, treeSprite, buildingSprite, charSprite, chestSprite, signSprite, bangSprite, tallOverlay, hash, SOLID, mk, px, ell } from './art.js';
 import { kithSprite } from './kithart.js';
 import { SPECIES, ITEMS } from './data.js';
-import { makeKith, healAll, give } from './kith.js';
+import { makeKith, healAll, give, statsOf } from './kith.js';
 import { sfx, music } from './audio.js';
 import { say, banner, openMenu, toast } from './ui.js';
 import { startBattle } from './battle.js';
@@ -80,7 +80,10 @@ async function wildBattle() {
   const m = W.map, total = m.enc.table.reduce((n, e) => n + e[3], 0);
   let r = Math.random() * total, e = m.enc.table[0];
   for (const row of m.enc.table) { if ((r -= row[3]) < 0) { e = row; break; } }
-  await startBattle({ foes: [makeKith(e[0], rint(e[1], e[2]))], kind: 'wild' });
+  const k = makeKith(e[0], rint(e[1], e[2]));
+  // Rare prismatic Kith: other colours, a tenth stronger, worth a Seal.
+  if (Math.random() < (flag('clear') ? 1 / 24 : 1 / 40) * (G.p.bag.charm ? 4 : 1)) { k.pr = true; const s = statsOf(k); k.hp = s.hp; k.en = s.en; }
+  await startBattle({ foes: [k], kind: 'wild' });
 }
 
 async function arrive() {
@@ -233,7 +236,7 @@ export function drawWorld(g) {
     const fx = lerp(f.ox, f.x, u) * 16, fy = lerp(f.oy, f.y, u) * 16;
     const fly = ['murklet', 'noxwing', 'gillby', 'finfathom', 'wispurr'].includes(lead.sp);
     const hop = p.moving ? Math.abs(Math.sin(u * Math.PI)) * 2 : 0;
-    list.push({ spr: kithSprite(lead.sp, 20, f.view === 'side' && f.flip, false, f.view || 'front'), x: fx - 2, y: fy - 5 - Math.round(hop) - (fly ? 3 + Math.round(Math.sin(t * 4)) : 0), sy: fy + 14, grass: tileAt(Math.round(fx / 16), Math.round(fy / 16)) === ',' && !fly, gx: fx, gy: fy });
+    list.push({ spr: kithSprite(lead.sp, 20, f.view === 'side' && f.flip, false, f.view || 'front', lead.pr), x: fx - 2, y: fy - 5 - Math.round(hop) - (fly ? 3 + Math.round(Math.sin(t * 4)) : 0), sy: fy + 14, grass: tileAt(Math.round(fx / 16), Math.round(fy / 16)) === ',' && !fly, gx: fx, gy: fy });
   }
   const frame = p.moving ? (((p.t * 2) | 0) + p.steps * 2) % 4 : 0;
   list.push({ spr: charSprite('hero', p.dir, [0, 1, 0, 2][frame]), x: ppx - 1, y: ppy - 6, sy: ppy + 15, grass: tileAt(Math.round(ppx / 16), Math.round(ppy / 16)) === ',', gx: ppx, gy: ppy });

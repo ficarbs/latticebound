@@ -68,7 +68,7 @@ function rebuild() {
 
 function refresh() {
   const k = L.k, n = NODES[L.cur], s = statsOf(k), on = k.nodes.includes(n.id), why = on ? null : cantReason(k, n);
-  ui.querySelector('.l-tabs').innerHTML = G.p.party.map((q, i) => `<button class="${q === k ? 'on' : ''}" data-i="${i}"><img src="${kithIcon(q.sp)}"><span>${q.name}<small>✦ ${q.sparks}</small></span></button>`).join('');
+  ui.querySelector('.l-tabs').innerHTML = G.p.party.map((q, i) => `<button class="${q === k ? 'on' : ''}" data-i="${i}"><img src="${kithIcon(q.sp, 'front', q.pr)}"><span>${q.name}<small>✦ ${q.sparks}</small></span></button>`).join('');
   ui.querySelector('.l-kith').innerHTML = `<b>${k.name}</b> Lv ${k.lv} ${elTag(SPECIES[k.sp].el)}<div class="l-sparks">✦ ${k.sparks} <small>Spark${k.sparks === 1 ? '' : 's'}</small></div><div class="l-stats"><span>HP ${s.hp}</span><span>EN ${s.en}</span><span>ATK ${s.atk}</span><span>DEF ${s.def}</span><span>SPD ${s.spd}</span></div>`;
   const arm = n.arm >= 0 ? `${EL[ELS[n.arm]].name} arm` : n.t === 'hub' ? 'Centre' : 'Ring';
   ui.querySelector('.l-node').innerHTML = `<small>${arm}</small><b>${nodeLabel(n)}</b><p>${nodeDesc(n)}</p><div class="l-state ${on ? 'on' : why ? 'no' : 'go'}">${on ? 'ACTIVE' : why || 'Ready · costs 1 Spark'}</div>`;
@@ -184,7 +184,7 @@ export function drawLattice(g) {
     g.globalAlpha = 1;
   }
   // the Kith stands on the last node it lit
-  const at = NODES[L.k.at != null ? L.k.at : 0], spr = kithSprite(L.k.sp, 20, false, false, 'front');
+  const at = NODES[L.k.at != null ? L.k.at : 0], spr = kithSprite(L.k.sp, 20, false, false, 'front', L.k.pr);
   g.drawImage(spr, at.x + C0 + ox - 10, at.y + C0 + oy - 26 + Math.round(Math.sin(t * 3) * 1.5));
   // cursor brackets
   const c = NODES[L.cur], x = c.x + C0 + ox, y = c.y + C0 + oy, e = 9 + Math.round(Math.sin(t * 6));

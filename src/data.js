@@ -178,6 +178,8 @@ export const ITEMS = {
   shard: { name: 'Spark Shard', spark: 1, price: 400, desc: 'Grants one Kith a Spark for the Lattice.' },
   key1: { name: 'Lattice Key I', key: true, desc: 'Opens Lv.1 locks on the Lattice.' },
   key2: { name: 'Lattice Key II', key: true, desc: 'Opens Lv.2 locks on the Lattice.' },
+  charm: { name: 'Prism Charm', key: true, desc: 'Prismatic Kith appear four times as often.' },
+  crest: { name: 'Warden\'s Crest', key: true, desc: 'Proof that all four Wardens fell at their strongest.' },
 };
 for (const id in ITEMS) ITEMS[id].id = id;
 

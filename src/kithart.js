@@ -482,10 +482,23 @@ const TONES = [
   c => [c[0] * 0.5, c[1] * 0.44, c[2] * 0.66],
 ];
 
-function render(sp, S, view) {
+// Prismatic Kith: every body colour swung around the wheel. Greys, ink and white stay put.
+function prism(col) {
+  let [r, g, b] = hex(col).map(v => v / 255);
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
+  if (d < 0.08) return col;
+  const s = Math.min(1, (l > 0.5 ? d / (2 - max - min) : d / (max + min)) * 1.15);
+  let h = max === r ? ((g - b) / d + 6) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  h = (h / 6 + 0.45) % 1;
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+  const ch = t => { t = (t + 1) % 1; return t < 1 / 6 ? p + (q - p) * 6 * t : t < 0.5 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; };
+  return '#' + [ch(h + 1 / 3), ch(h), ch(h - 1 / 3)].map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
+}
+
+function render(sp, S, view, pr) {
   const c = mk(S, S), g = c.g, pal = [];
   g.imageSmoothingEnabled = true;
-  const reg = col => { if (!pal.includes(col)) pal.push(col); return col; };
+  const reg = col => { if (pr && col !== K && col !== W) col = prism(col); if (!pal.includes(col)) pal.push(col); return col; };
   const base = () => g.setTransform(S / 64, 0, 0, S / 64, 0, 0);
   base();
   const a = {
@@ -545,15 +558,15 @@ function render(sp, S, view) {
 
 const cache = {};
 // view: 'side' (three-quarter, faces left), 'front' or 'back'.
-export function kithSprite(sp, size = 48, flip = false, white = false, view = 'side') {
-  const base = sp + size + view, key = base + (flip ? 'f' : '') + (white ? 'w' : '');
+export function kithSprite(sp, size = 48, flip = false, white = false, view = 'side', pr = false) {
+  const base = sp + size + view + (pr ? 'p' : ''), key = base + (flip ? 'f' : '') + (white ? 'w' : '');
   if (cache[key]) return cache[key];
-  let c = cache[base] || (cache[base] = render(sp, size, view));
+  let c = cache[base] || (cache[base] = render(sp, size, view, pr));
   if (flip) c = cache[base + 'f'] || (cache[base + 'f'] = flipH(c));
   if (white) c = whiten(c);
   return (cache[key] = c);
 }
 export const battleSize = sp => (SPECIES[sp].raw ? 64 : [0, 40, 52, 62][SPECIES[sp].stage]);
 const urls = {};
-export const kithIcon = (sp, view = 'front') => urls[sp + view] || (urls[sp + view] = kithSprite(sp, 48, false, false, view).toDataURL());
+export const kithIcon = (sp, view = 'front', pr = false) => urls[sp + view + !!pr] || (urls[sp + view + !!pr] = kithSprite(sp, 48, false, false, view, !!pr).toDataURL());
 export const ALL_KITH = Object.keys(DRAW);

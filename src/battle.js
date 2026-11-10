@@ -2,7 +2,7 @@
 import { G, tween, sleep, wipe, ease, clamp, pick } from './state.js';
 import { hit } from './input.js';
 import { SPECIES, SKILLS, ITEMS, EL, effect, xpNeed } from './data.js';
-import { statsOf, gainXp, applyItem, addKith, formsOf, newForms } from './kith.js';
+import { statsOf, gainXp, applyItem, addKith, formsOf, newForms, dexMark } from './kith.js';
 import { kithSprite, battleSize } from './kithart.js';
 import { mk, px, ell, hash, pline, sealSprite } from './art.js';
 import { sfx, music } from './audio.js';
@@ -134,7 +134,7 @@ function makeBg(type) {
 
 function drawKith(g, s, base, view, t) {
   if (s.a <= 0.01 || s.s <= 0.01) return;
-  const size = battleSize(s.sp), spr = kithSprite(s.sp, size, false, s.fl > 0 && ((s.fl * 22) | 0) % 2 === 0, view);
+  const size = battleSize(s.sp), spr = kithSprite(s.sp, size, false, s.fl > 0 && ((s.fl * 22) | 0) % 2 === 0, view, s.pr);
   const w = Math.round(size * s.s), h = Math.round(size * s.s), fly = FLY.includes(s.sp);
   const bob = Math.round(Math.sin(t * (fly ? 3 : 2) + base.x) * (fly ? 2.5 : 1));
   g.globalAlpha = 0.28 * s.a;
@@ -142,6 +142,10 @@ function drawKith(g, s, base, view, t) {
   g.globalAlpha = s.a;
   g.drawImage(spr, Math.round(base.x + s.ox - w / 2), Math.round(base.y + 2 + s.oy - h + bob - (fly ? 5 : 0)), w, h);
   g.globalAlpha = 1;
+  if (s.pr && s.a > 0.5) for (let i = 0; i < 3; i++) {
+    const n = ((t * 3 + i * 1.3) | 0), x = base.x + s.ox + (hash(n, i, 21) - 0.5) * size, y = base.y - hash(n, i, 22) * size, ph = (t * 3 + i * 1.3) % 1;
+    if (ph < 0.6) { px(g, x | 0, (y | 0) - 1, '#ffffff', 1, 3); px(g, (x | 0) - 1, y | 0, '#ffffff', 3, 1); }
+  }
 }
 
 export function drawBattle(g) {
@@ -321,7 +325,8 @@ function command() {
 
 async function sendOut(side, k, intro) {
   const s = side === 'me' ? B.ms : B.fs;
-  Object.assign(s, { sp: k.sp, ox: side === 'me' ? -130 : 130, oy: 0, a: 1, s: 1, fl: 0 });
+  Object.assign(s, { sp: k.sp, pr: !!k.pr, ox: side === 'me' ? -130 : 130, oy: 0, a: 1, s: 1, fl: 0 });
+  if (side === 'foe') dexMark(k.sp, 1);
   refresh();
   if (intro) show(intro);
   await tween(s, 'ox', 0, 0.45);
@@ -484,13 +489,15 @@ export async function startBattle(o) {
   const blank = () => ({ sp: null, ox: 0, oy: 0, a: 1, s: 1, fl: 0 });
   B = { foes: o.foes, fi: 0, pi: p.party.findIndex(k => k.hp > 0), kind: o.kind, name: o.name || '', ms: blank(), fs: blank(), parts: [], bolts: [], orb: null, seal: null, shake: 0, flash: 0, flashCol: '#fff', skip: false, bg: makeBg(W.map.bg) };
   for (const k of [...p.party, ...o.foes]) k._b = { buf: {}, st: null, stun: false };
-  B.ms.sp = me().sp; B.fs.sp = foe().sp; B.ms.ox = -130; B.fs.ox = 130;
+  B.ms.sp = me().sp; B.fs.sp = foe().sp; B.ms.pr = !!me().pr; B.fs.pr = !!foe().pr; B.ms.ox = -130; B.fs.ox = 130;
+  dexMark(foe().sp, 1);
   G.mode = 'battle';
   music(o.kind === 'boss' ? 'boss' : 'battle');
   ui.classList.remove('hidden'); hideCmd(); show(''); refresh();
   await wipe(0, 0.3);
   await tween(B.fs, 'ox', 0, 0.5);
   await msg(o.kind === 'wild' ? `A wild ${foe().name} appeared!` : o.kind === 'boss' ? `${B.name} looms over you!` : `${B.name} wants to battle!`, 0.6);
+  if (foe().pr) { sfx('item'); const c = centre('foe'); burst(c.x, c.y, 'volt', 20, 0.8); await msg('It shimmers in colours you have never seen. A prismatic Kith!', 0.9); }
   await sendOut('me', me(), `Go, ${me().name}!`);
   await sleep(0.3);
   const result = await loop();

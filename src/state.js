@@ -37,7 +37,7 @@ export const rint = (a, b) => a + ((Math.random() * (b - a + 1)) | 0);
 export function newPlayer() {
   return {
     map: 'hearth', x: 5, y: 8, dir: 'down',
-    party: [], reserve: [], bag: {}, gold: 120, flags: {}, sync: 0,
+    party: [], reserve: [], bag: {}, gold: 120, flags: {}, dex: {}, sync: 0,
     heal: { map: 'hearth', x: 19, y: 8 }, steps: 0, time: 0,
   };
 }

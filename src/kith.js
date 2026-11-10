@@ -33,6 +33,7 @@ export function statsOf(k) {
   }
   if (k.apex) { s.hp += 14 * k.apex; for (const key of KEYS.slice(2)) s[key] += 3 * k.apex; }
   if (k.boss) s.hp = Math.round(s.hp * k.boss);
+  if (k.pr) for (const key of KEYS) s[key] = Math.round(s[key] * 1.1);
   return s;
 }
 
@@ -84,6 +85,7 @@ export function shiftForm(k, to) {
   if (k.name === from.name) k.name = next.name;
   k.sp = to;
   if (!k.forms.includes(to)) k.forms.push(to);
+  if (G.p) dexMark(to, 2);
   const after = statsOf(k);
   k.hp = k.hp <= 0 ? 0 : Math.max(1, Math.round(k.hp * after.hp / before.hp));
   k.en = Math.min(after.en, Math.round(k.en * after.en / before.en));
@@ -123,7 +125,12 @@ export function healAll() {
   for (const k of [...G.p.party, ...G.p.reserve]) { const s = statsOf(k); k.hp = s.hp; k.en = s.en; }
 }
 
+// The Index: 1 = met in battle, 2 = a form one of your Kith has worn.
+export function dexMark(sp, n) { const d = G.p.dex || (G.p.dex = {}); if ((d[sp] || 0) < n) d[sp] = n; }
+export function syncDex() { for (const k of [...G.p.party, ...G.p.reserve]) for (const f of formsOf(k)) dexMark(f, 2); }
+
 export function addKith(k) {
+  for (const f of formsOf(k)) dexMark(f, 2);
   if (G.p.party.length < 3) { G.p.party.push(k); return 'party'; }
   G.p.reserve.push(k);
   return 'haven';

@@ -171,3 +171,6 @@ b { font-weight: 600; }
 .cr-gap { height: 90px; }
 .cr-cast { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px 26px; } .cr-cast div { display: flex; flex-direction: column; align-items: center; font-size: 20px; }
 .cr-cast img { width: 96px; height: 96px; } .cr-cast.small img { width: 64px; height: 64px; } .cr-cast small { color: var(--dim); font-size: 14px; } .cr-cast img.out { filter: brightness(0) opacity(.5); }
+
+.pr { color: #9ff5ee; font-style: normal; }
+.index .s-list { gap: 5px; }
