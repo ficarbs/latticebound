@@ -74,7 +74,16 @@ const C = {
   cw: '#1c182e', cw1: '#6a6388', cw2: '#352f50', b1: '#b8804a', b2: '#8a5a30', b3: '#d8a468',
   x1: '#2b2d4a', x2: '#363962', x3: '#4ae3d8', xw: '#0e0f22', xw1: '#5a5fa0', xw2: '#24264e', ink: '#161228',
 };
-export const SOLID = 'T#RFXK~L';
+export const SOLID = 'T#RFXK~LBQZJVW';
+// Field obstacles and the element that clears each one.
+export const FIELD = {
+  B: { el: 'ember', name: 'bramble', verb: 'burns the bramble away', hint: 'A tangle of thorny bramble. An Ember Kith could burn through it.' },
+  Q: { el: 'stone', name: 'cracked boulder', verb: 'shatters the boulder', hint: 'A cracked boulder. A Stone Kith could break it apart.' },
+  Z: { el: 'volt', name: 'dormant pylon', verb: 'charges the pylon until it sinks into the ground', hint: 'An old Lattice pylon, dark and humming faintly. A Volt Kith could wake it.' },
+  W: { el: 'tide', name: 'whirlpool', verb: 'calms the whirlpool, and stepping stones rise', hint: 'A churning whirlpool. A Tide Kith could still the water.' },
+  V: { el: 'bloom', name: 'vine wall', verb: 'coaxes the vines apart', hint: 'A wall of living vines. A Bloom Kith could ask them to part.' },
+  J: { el: 'shade', name: 'haze', verb: 'drinks the haze into its shadow', hint: 'A knot of violet haze that pushes back. A Shade Kith could swallow it.' },
+};
 // Outdoor palettes: [ground, ground dark, ground light], tall grass [base, blade, tip], tree leaves dark to light.
 const THEMES = {
   out: { g: ['#5fb04a', '#4a9440', '#84cf5c'], tg: ['#3f8f45', '#2c6e3c', '#7fd060'], leaf: ['#1f5638', '#2f7d4a', '#4fa85a', '#7fd070'] },
@@ -196,6 +205,40 @@ function tile(g, ch, X, Y, tx, ty, fr, at, theme) {
       P(g, X, Y, C.ink, 16, 16);
       for (let i = 0; i < 4; i++) { P(g, X + 1 + i, Y + i * 4, theme === 'cave' ? C.c3 : C.xw1, 14 - i * 2, 3); P(g, X + 1 + i, Y + i * 4 + 3, theme === 'cave' ? C.c2 : C.xw2, 14 - i * 2, 1); }
       P(g, X + 6, Y + 6, fr ? C.x3 : '#2aa8a8', 4, 2);
+      break;
+    case 'B':
+      floor();
+      ell(g, X + 8, Y + 10, 8, 6, C.ink); ell(g, X + 8, Y + 9, 7, 5, '#3a4a24'); ell(g, X + 6, Y + 8, 4, 3, '#56662e');
+      for (let i = 0; i < 9; i++) { const x = X + 2 + ((h(i + 80) * 12) | 0), y = Y + 4 + ((h(i + 90) * 9) | 0); P(g, x, y, i % 3 ? '#8a5a2a' : '#c23a5a', 1, i % 3 ? 2 : 1); }
+      P(g, X + 3, Y + 6, '#c23a5a'); P(g, X + 12, Y + 9, '#c23a5a');
+      break;
+    case 'Q':
+      floor();
+      ell(g, X + 8, Y + 9, 8, 7, C.ink); ell(g, X + 8, Y + 9, 7, 6, C.r1); ell(g, X + 6, Y + 6, 4, 3, C.r3); P(g, X + 3, Y + 13, C.r2, 11, 2);
+      P(g, X + 8, Y + 4, C.ink, 1, 3); P(g, X + 9, Y + 7, C.ink, 1, 3); P(g, X + 8, Y + 10, C.ink, 1, 3); P(g, X + 7, Y + 12, C.ink, 1, 2); P(g, X + 10, Y + 9, C.ink, 2, 1);
+      break;
+    case 'Z':
+      floor();
+      P(g, X + 5, Y + 1, C.ink, 6, 15); P(g, X + 6, Y + 6, '#5a5f7a', 4, 9); P(g, X + 6, Y + 6, '#8d93a0', 1, 9);
+      P(g, X + 5, Y + 1, '#161228', 6, 6); P(g, X + 6, Y + 2, fr ? '#8a7a2a' : '#6a5a20', 4, 4); P(g, X + 7, Y + 3, fr ? '#f6d743' : '#b8a040', 1, 1);
+      P(g, X + 3, Y + 14, '#3a3a50', 10, 2);
+      break;
+    case 'W': {
+      P(g, X, Y, C.w2, 16, 16);
+      for (let r = 7; r > 0; r -= 2) for (let a = 0; a < 6.28; a += 0.5) P(g, X + 8 + Math.round(Math.cos(a + r + (fr ? 0.6 : 0)) * r), Y + 8 + Math.round(Math.sin(a + r + (fr ? 0.6 : 0)) * r * 0.8), r > 4 ? C.w1 : C.w3);
+      P(g, X + 7, Y + 7, C.w0, 2, 2);
+      break;
+    }
+    case 'V':
+      floor();
+      P(g, X, Y, '#1c3a1e', 16, 16);
+      for (let i = 0; i < 5; i++) { const x = X + 1 + i * 3; for (let y = 0; y < 16; y += 2) P(g, x + ((y / 2 + i) % 2), Y + y, i % 2 ? C.l1 : C.l2, 2, 2); }
+      for (let i = 0; i < 6; i++) P(g, X + ((h(i + 70) * 14) | 0), Y + ((h(i + 75) * 14) | 0), C.l3, 2, 1);
+      break;
+    case 'J':
+      floor();
+      for (let i = 0; i < 5; i++) { const a = i * 1.26 + (fr ? 0.5 : 0); ell(g, X + 8 + Math.round(Math.cos(a) * 3), Y + 8 + Math.round(Math.sin(a) * 3), 5, 4, i % 2 ? '#5a3a8a' : '#7b5cc9'); }
+      ell(g, X + 8, Y + 8, 3, 3, '#c58af0'); P(g, X + 7, Y + 7, '#2c1e48', 2, 2);
       break;
     case 'c': cave(); break;
     case 'p': spire(); break;
@@ -324,6 +367,7 @@ export const LOOKS = {
   yuna: { hair: '#dfe8f2', hat: '#4a7ad8', shirt: '#f6d743', robe: true },
   smith: { hair: '#2a2636', shirt: '#b8442a', pants: '#3a2a2a', skin: '#c89068' },
   scout: { hair: '#6e4428', hat: '#dfe8f2', shirt: '#4a7ad8', pants: '#34406a' },
+  corin: { hair: '#d8d8ec', hat: '#2e2c48', shirt: '#e0503c', pants: '#2e2c48', skin: '#e0b088' },
   acolyte: { hair: '#12132a', hat: '#12132a', shirt: '#2a2c58', robe: true, skin: '#b8c0d8' },
 };
 const chars = {};

@@ -9,8 +9,11 @@ import { sfx, music } from './audio.js';
 import { $, bar, elTag, floatText, partyScreen, bagScreen, toast } from './ui.js';
 import { W, blackout } from './world.js';
 import { saveGame } from './save.js';
+import { S } from './settings.js';
+import { boostFor, battleLine, skyBattleBg, battleWeather } from './sky.js';
 
 let B = null, ui, msgEl, cmdEl, typer = null;
+export const battleState = () => B; // for console debugging
 const ME = { x: 84, y: 124 }, FOE = { x: 236, y: 82 };
 const FLY = ['murklet', 'noxwing', 'gillby', 'finfathom', 'wispurr', 'phantigre'];
 const STATUS = { burn: 'BURN', blight: 'BLIGHT' };
@@ -23,7 +26,7 @@ function buildUI() {
     <div class="b-sync"><label>SYNC</label><div class="bar sync"><i></i></div></div>
     <div class="b-box pn"><div class="b-msg"></div><div class="b-cmd scope hidden"></div></div>`;
   msgEl = ui.querySelector('.b-msg'); cmdEl = ui.querySelector('.b-cmd');
-  ui.querySelector('.b-box').addEventListener('click', e => { if (B && !e.target.closest('button')) B.skip = true; });
+  ui.querySelector('.b-box').addEventListener('click', e => { if (B && !e.target.closest('button')) { B.skip = true; if (B.auto) { B.auto = false; toast('Auto battle off.'); } } });
 }
 
 const me = () => G.p.party[B.pi];
@@ -62,10 +65,11 @@ const show = text => { typer = null; msgEl.textContent = text; };
 export function battleUpdate(dt) {
   if (!B) return;
   if (typer) {
-    typer.n = Math.min(typer.full.length, typer.n + dt * 70);
+    typer.n = Math.min(typer.full.length, typer.n + dt * 70 * S.text);
     msgEl.textContent = typer.full.slice(0, typer.n | 0);
   }
   if (hit('a') || hit('b')) B.skip = true;
+  if (hit('b') && B.auto) { B.auto = false; toast('Auto battle off.'); }
   B.shake = Math.max(0, B.shake - dt);
   B.flash = Math.max(0, B.flash - dt * 2.5);
   for (const s of [B.ms, B.fs]) s.fl = Math.max(0, s.fl - dt);
@@ -76,6 +80,7 @@ export function battleUpdate(dt) {
   }
   if (B.orb) for (let i = 0; i < 2; i++) B.parts.push({ x: B.orb.x, y: B.orb.y, vx: (Math.random() - 0.5) * 30, vy: (Math.random() - 0.5) * 30, g: 0, life: 0.25, col: B.orb.col, s: 2 });
   for (let i = B.bolts.length - 1; i >= 0; i--) if ((B.bolts[i].life -= dt) <= 0) B.bolts.splice(i, 1);
+  for (let i = B.fx.length - 1; i >= 0; i--) if ((B.fx[i].t += dt) >= B.fx[i].dur) B.fx.splice(i, 1);
 }
 
 const PCOL = {
@@ -94,6 +99,53 @@ function burst(x, y, el, n = 16, power = 1) {
     while (pts[pts.length - 1][1] < y) { const l = pts[pts.length - 1]; pts.push([l[0] + (Math.random() - 0.5) * 16, l[1] + 8 + Math.random() * 8]); }
     B.bolts.push({ pts, life: 0.12 + i * 0.06 });
   }
+}
+
+// Signature animations for strong skills, one per element, drawn over the target.
+function drawFx(g, f) {
+  const u = f.t / f.dur, x = f.x, y = f.y, top = f.top, t = G.t;
+  const col = PCOL[f.el];
+  if (f.el === 'ember') {
+    for (let i = -3; i <= 3; i++) {
+      const h = Math.max(0, Math.sin(Math.min(1, u * 1.6) * Math.PI) * (70 - Math.abs(i) * 12) * (0.8 + hash(i, (t * 12) | 0, 5) * 0.4));
+      const cx = x + i * 7;
+      px(g, cx - 3, y - h, col[2], 7, h); px(g, cx - 2, y - h * 0.85, col[1], 5, h * 0.85); px(g, cx - 1, y - h * 0.6, col[0], 3, h * 0.6);
+    }
+  } else if (f.el === 'tide') {
+    const wx = x - 70 + u * 140;
+    for (let i = 0; i < 5; i++) {
+      const r = 26 - i * 4;
+      for (let a = -1.4; a < 1.4; a += 0.08) px(g, Math.round(wx - i * 5 + Math.cos(a) * r * 0.6), Math.round(y - 22 + Math.sin(a) * r), i < 2 ? col[0] : i < 4 ? col[1] : col[2], 2, 2);
+    }
+  } else if (f.el === 'bloom') {
+    for (let v = 0; v < 6; v++) {
+      const bx = x - 30 + v * 12, len = Math.min(1, u * 1.8) * (40 + hash(v, 2, 9) * 30);
+      for (let s = 0; s < len; s += 2) {
+        const vx = bx + Math.sin(s / 8 + v) * 6, vy = y - s;
+        px(g, vx | 0, vy | 0, col[2], 2, 2);
+        if (s % 10 === 0) px(g, (vx + (v % 2 ? 2 : -3)) | 0, vy | 0, col[0], 3, 2);
+      }
+    }
+  } else if (f.el === 'stone') {
+    const fall = Math.min(1, u * 2), sy = -40 + (top + 10) * fall * fall;
+    px(g, x - 20, sy - 1, '#161228', 40, 26); px(g, x - 19, sy, col[1], 38, 24); px(g, x - 19, sy, col[0], 38, 4); px(g, x - 19, sy + 20, col[2], 38, 4);
+    px(g, x - 6, sy + 8, col[2], 2, 8); px(g, x + 8, sy + 6, col[2], 2, 10);
+  } else if (f.el === 'shade') {
+    const r = Math.round(60 * (1 - u)) + 4;
+    g.globalAlpha = 0.35 * (1 - u); px(g, 0, 0, '#0c0818', 320, 180); g.globalAlpha = 1;
+    for (let a = 0; a < 6.28; a += 0.06) { px(g, Math.round(x + Math.cos(a + t * 3) * r), Math.round(top + Math.sin(a + t * 3) * r * 0.6), col[(a * 3 | 0) % 3], 2, 2); }
+  } else if (f.el === 'volt') {
+    if (u < 0.5) { g.globalAlpha = 0.25; px(g, 0, 0, '#fff6a8', 320, 180); g.globalAlpha = 1; }
+  } else {
+    for (let i = 0; i < 3; i++) { const k = Math.min(1, u * 3 - i * 0.4); if (k > 0) pline(g, x - 22 + i * 10, top - 24, x - 22 + i * 10 + 30 * k, top - 24 + 40 * k, '#ffffff'); }
+  }
+}
+async function signature(side, el, dur = 0.5) {
+  const b = side === 'me' ? ME : FOE, c = centre(side);
+  B.fx.push({ el, t: 0, dur, x: b.x, y: b.y, top: c.y });
+  if (el === 'volt') burst(c.x, c.y, 'volt', 4, 0.4);
+  sfx(el === 'stone' ? 'crit' : el === 'tide' ? 'weak' : 'cast');
+  await sleep(dur * 0.75);
 }
 
 function makeBg(type) {
@@ -154,10 +206,12 @@ export function drawBattle(g) {
   g.drawImage(B.bg, sh, 0);
   drawKith(g, B.fs, FOE, 'front', t);
   drawKith(g, B.ms, ME, 'back', t);
+  for (const f of B.fx) drawFx(g, f);
   for (const q of B.parts) px(g, Math.round(q.x), Math.round(q.y), q.col, q.s, q.s);
   for (const b of B.bolts) for (let i = 1; i < b.pts.length; i++) { pline(g, b.pts[i - 1][0], b.pts[i - 1][1], b.pts[i][0], b.pts[i][1], '#ffffff'); pline(g, b.pts[i - 1][0] + 1, b.pts[i - 1][1], b.pts[i][0] + 1, b.pts[i][1], '#f6d743'); }
   if (B.orb) { ell(g, Math.round(B.orb.x), Math.round(B.orb.y), 4, 4, B.orb.col); ell(g, Math.round(B.orb.x) - 1, Math.round(B.orb.y) - 1, 2, 2, '#ffffff'); }
   if (B.seal) g.drawImage(sealSprite(), Math.round(B.seal.x - 5), Math.round(B.seal.y - 5));
+  battleWeather(g, W.map, t);
   if (B.flash > 0) { g.globalAlpha = Math.min(1, B.flash); px(g, 0, 0, B.flashCol, 320, 180); g.globalAlpha = 1; }
 }
 
@@ -166,6 +220,7 @@ const centre = side => { const b = side === 'me' ? ME : FOE, k = side === 'me' ?
 async function hitFx(side, el, dmg, crit, m) {
   const s = side === 'me' ? B.ms : B.fs, c = centre(side);
   s.fl = 0.3;
+  if (crit) { B.flashCol = '#ffffff'; B.flash = 0.5; B.shake = 0.45; await sleep(0.09); }
   burst(c.x, c.y, el, crit ? 26 : 16, crit ? 1.3 : 1);
   if (crit || m > 1) B.shake = 0.3;
   sfx(crit ? 'crit' : m < 1 ? 'weak' : 'hit');
@@ -181,7 +236,7 @@ function calc(att, def, sk, opts = {}) {
   if (opts.pierce) m = Math.max(1, m);
   const stab = sk.el === SPECIES[att.sp].el ? 1.2 : 1, crit = Math.random() < 0.08;
   const gap = clamp(1 + (att.lv - def.lv) * 0.012, 0.5, 1.5);
-  const dmg = Math.max(1, Math.round(gap * ((sk.pow * A) / (Dv + 10) * 0.85 + 2) * m * stab * (crit ? 1.5 : 1) * (0.92 + Math.random() * 0.16)));
+  const dmg = Math.max(1, Math.round(gap * ((sk.pow * A) / (Dv + 10) * 0.85 + 2) * m * stab * boostFor(W.map, sk.el) * (crit ? 1.5 : 1) * (0.92 + Math.random() * 0.16)));
   return { dmg, m, crit };
 }
 
@@ -201,6 +256,10 @@ async function useSkill(side, id, opts = {}) {
     }
     if (id === 'strike' || sk.pow <= 18) {
       await tween(as, 'ox', 26 * dir, 0.1, ease.in);
+      if (id === 'strike') B.fx.push({ el: 'none', t: 0, dur: 0.25, x: centre(other).x, y: 0, top: centre(other).y + 16 });
+    } else if (sk.pow >= 26 || opts.sync) {
+      await tween(as, 'oy', -6, 0.08); tween(as, 'oy', 0, 0.12);
+      await signature(other, sk.el, sk.pow >= 46 || opts.sync ? 0.62 : 0.48);
     } else {
       sfx('cast');
       const a = centre(side), b = centre(other);
@@ -281,7 +340,28 @@ function setCmd(items, onCancel, onSel) {
 }
 const hideCmd = () => cmdEl.classList.add('hidden');
 
-function command() {
+// Auto battle: the Kith in play picks for itself, healing when low and otherwise hitting where it hurts.
+function autoAct() {
+  const k = me(), max = statsOf(k);
+  if (G.p.sync >= 100) return { type: 'sync' };
+  const heal = k.skills.find(id => SKILLS[id].kind === 'heal' && SKILLS[id].cost <= k.en);
+  if (heal && k.hp < max.hp * 0.35) return { type: 'skill', id: heal };
+  let best = 'strike', bs = -1;
+  for (const id of ['strike', ...k.skills]) {
+    const sk = SKILLS[id];
+    if (sk.kind !== 'atk' || sk.cost > k.en) continue;
+    const s = sk.pow * effect(sk.el, SPECIES[foe().sp].el) * (sk.el === SPECIES[k.sp].el ? 1.2 : 1);
+    if (s > bs) { bs = s; best = id; }
+  }
+  return { type: 'skill', id: best };
+}
+
+async function command() {
+  if (B.auto) {
+    show('AUTO · press X or tap here to take over');
+    await sleep(0.35);
+    if (B.auto) return autoAct();
+  }
   return new Promise(res => {
     const k = me();
     const done = a => { hideCmd(); res(a); };
@@ -291,6 +371,7 @@ function command() {
       setCmd([
         ['FIGHT', fight], ['SYNC', () => done({ type: 'sync' }), G.p.sync < 100, 'sync'],
         ['KITH', swap], ['BAG', bag], ['RUN', () => done({ type: 'run' }), B.kind !== 'wild'],
+        ['AUTO', () => { B.auto = true; toast('Auto battle on. Press X or tap the message box to stop.'); done(autoAct()); }, false, 'auto'],
       ]);
     };
     const fight = () => {
@@ -332,9 +413,12 @@ async function sendOut(side, k, intro) {
   await tween(s, 'ox', 0, 0.45);
 }
 async function faintAnim(side) {
-  const s = side === 'me' ? B.ms : B.fs;
+  const s = side === 'me' ? B.ms : B.fs, c = centre(side);
   sfx('faint');
-  await Promise.all([tween(s, 'oy', 18, 0.5, ease.in), tween(s, 'a', 0, 0.5, ease.in)]);
+  s.fl = 0.5;
+  await sleep(0.18);
+  burst(c.x, c.y + 10, 'none', 18, 0.7);
+  await Promise.all([tween(s, 'oy', 18, 0.5, ease.in), tween(s, 'a', 0, 0.5, ease.in), tween(s, 's', 0.7, 0.5, ease.in)]);
 }
 
 async function tryBind(id) {
@@ -479,6 +563,19 @@ async function loop() {
   }
 }
 
+// Trainer and boss fights open with a VS card while the screen is still covered.
+async function versus(o) {
+  const v = $('#vs'), lead = me(), f = o.foes[0];
+  v.className = o.kind === 'boss' ? 'boss' : '';
+  v.innerHTML = `<div class="vs-l"><img src="${kithSprite(lead.sp, 48, false, false, 'front', lead.pr).toDataURL()}"><b>YOU</b></div><div class="vs-mid">VS</div><div class="vs-r"><b>${o.name}</b><img src="${kithSprite(f.sp, 48, false, false, 'front', f.pr).toDataURL()}"></div>`;
+  void v.offsetWidth; v.classList.add('show');
+  sfx('encounter');
+  await sleep(1.25);
+  v.classList.remove('show'); v.classList.add('out');
+  await sleep(0.25);
+  v.className = 'hidden'; v.innerHTML = '';
+}
+
 // o: { foes, kind: 'wild' | 'trainer' | 'boss', name, gold }
 export async function startBattle(o) {
   G.busy++;
@@ -487,16 +584,19 @@ export async function startBattle(o) {
   await wipe(1, 0.45);
   const p = G.p;
   const blank = () => ({ sp: null, ox: 0, oy: 0, a: 1, s: 1, fl: 0 });
-  B = { foes: o.foes, fi: 0, pi: p.party.findIndex(k => k.hp > 0), kind: o.kind, name: o.name || '', ms: blank(), fs: blank(), parts: [], bolts: [], orb: null, seal: null, shake: 0, flash: 0, flashCol: '#fff', skip: false, bg: makeBg(W.map.bg) };
+  B = { fx: [], foes: o.foes, fi: 0, pi: p.party.findIndex(k => k.hp > 0), kind: o.kind, name: o.name || '', ms: blank(), fs: blank(), parts: [], bolts: [], orb: null, seal: null, shake: 0, flash: 0, flashCol: '#fff', skip: false, auto: false, bg: skyBattleBg(makeBg(W.map.bg), W.map) };
   for (const k of [...p.party, ...o.foes]) k._b = { buf: {}, st: null, stun: false };
   B.ms.sp = me().sp; B.fs.sp = foe().sp; B.ms.pr = !!me().pr; B.fs.pr = !!foe().pr; B.ms.ox = -130; B.fs.ox = 130;
   dexMark(foe().sp, 1);
   G.mode = 'battle';
   music(o.kind === 'boss' ? 'boss' : 'battle');
+  if (o.kind !== 'wild') await versus(o);
   ui.classList.remove('hidden'); hideCmd(); show(''); refresh();
   await wipe(0, 0.3);
   await tween(B.fs, 'ox', 0, 0.5);
   await msg(o.kind === 'wild' ? `A wild ${foe().name} appeared!` : o.kind === 'boss' ? `${B.name} looms over you!` : `${B.name} wants to battle!`, 0.6);
+  const sky = battleLine(W.map);
+  if (sky) await msg(sky, 0.5);
   if (foe().pr) { sfx('item'); const c = centre('foe'); burst(c.x, c.y, 'volt', 20, 0.8); await msg('It shimmers in colours you have never seen. A prismatic Kith!', 0.9); }
   await sendOut('me', me(), `Go, ${me().name}!`);
   await sleep(0.3);

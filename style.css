@@ -185,3 +185,23 @@ body.touch #back { font-size: 13px; padding: 13px 16px; }
 * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
 #touch button { outline: none; touch-action: none; } #touch button.on { background: rgba(255, 216, 102, .55); }
 button:focus { outline: none; }
+
+.b-cmd button.auto { color: #9ff5ee; }
+.options .k-row.item span { font-family: var(--px); font-size: 12px; }
+
+#hud .h-sky { font-family: var(--px); font-size: 10px; color: var(--cream); white-space: nowrap; }
+
+#vs { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; background: #0a0818; }
+#vs > div { position: absolute; left: -10%; right: -10%; height: 150px; display: flex; align-items: center; gap: 30px; padding: 0 22%; font-family: var(--px); font-size: 26px; transition: transform .35s cubic-bezier(.2,.9,.3,1); }
+#vs .vs-l { top: 90px; background: linear-gradient(90deg, #2b2857, #4a3f80); border-block: 4px solid var(--cream); transform: translateX(-120%) skewY(-4deg); color: #9ff5ee; }
+#vs .vs-r { top: 300px; justify-content: flex-end; background: linear-gradient(90deg, #6a2840, #b8442a); border-block: 4px solid var(--cream); transform: translateX(120%) skewY(-4deg); color: var(--gold); }
+#vs.boss .vs-r { background: linear-gradient(90deg, #0e0c1c, #3a1c4c); color: #ff4a9a; }
+#vs img { width: 144px; height: 144px; image-rendering: pixelated; }
+#vs .vs-mid { top: 215px; height: 110px; justify-content: center; font-size: 64px; color: #fff; text-shadow: 6px 6px 0 var(--ink); transform: scale(0); padding: 0; }
+#vs.show .vs-l, #vs.show .vs-r { transform: translateX(0) skewY(-4deg); }
+#vs.show .vs-mid { transform: scale(1); transition-delay: .2s; }
+#vs.out > div { opacity: 0; transition: opacity .2s; }
+
+.echo-code, .echo-in { width: 100%; font-family: var(--px); font-size: 10px; line-height: 1.6; background: var(--ink); color: #9ff5ee; border: 2px solid var(--panel2); border-radius: 4px; padding: 8px; margin: 6px 0 12px; resize: none; word-break: break-all; pointer-events: auto; user-select: text; -webkit-user-select: text; }
+.echo-in { color: var(--cream); }
+.echo-err { color: #f0889a; font-size: 16px; min-height: 20px; margin: 0; }

@@ -4,7 +4,7 @@ An original pixel-art monster-taming RPG that runs in the browser. Explore a sma
 
 **Play it:** https://ficarbs.github.io/latticebound/
 
-No install, no build step, no asset files. Every sprite, tile, sound and song is generated in code.
+No install, no build step. Every sprite, tile, sound and song is generated in code; the only image files are the home-screen icons, which were rendered from the game's own sprites.
 
 ## What it is
 
@@ -17,6 +17,13 @@ No install, no build step, no asset files. Every sprite, tile, sound and song is
 - **25 Kith forms**, each drawn from the front, side and back.
 - **Level 100 and the Hollow Deep.** Beating the story opens a stair under the Spire: 24 generated floors where wild Kith climb three levels a floor. Every fourth floor is a guardian's arena with a font and a Waygate stop. Floor 24 holds The Unlit, a Lv 100 boss that changes shape at 60% health and then moves twice a turn. It is meant to be the hardest thing in the game.
 - **After the credits.** The four Wardens (Sable included) offer rematches whose team level follows how deep you have gone: 54, then 76, then 100 with a two-phase ace. Beat all four at their strongest for the Warden's Crest. The Kith Index tracks every form you have met and worn and pays out Spark Shards, Elixirs and a Prism Charm as it fills. And about one wild Kith in forty (one in twenty-four after the story) is prismatic: different colours, a tenth stronger, and it keeps both through every form.
+- **A living world.** One in-game minute passes per real second, so a day lasts 24 minutes. Night falls with lit windows and a lantern glow; each region has its own weather (rain, fog, ashfall, snow). Weather and night change which Kith appear (Shade Kith come out after dark, Volt Kith in the rain) and boost or weaken elements in battle.
+- **Field abilities.** Kith in your party clear the way: Ember burns bramble, Stone cracks boulders, Volt wakes old pylons, Tide calms whirlpools, Bloom parts vine walls, Shade swallows haze. Eight hidden spots hold rare items, a prismatic Crowned Magmander and a Maelorca living under Galehaven's lake.
+- **Corin, your rival.** He always takes the starter yours is weakest against and turns up four times on the road (walking up to challenge you, like every other Tamer now), then waits in Galehaven for rematches that match your strongest Kith.
+- **Lattice Fusion.** After Key II, Researcher Ilse in the Hearthvale lab fuses two Lv 40+ Kith whose elements complete each other (Ember + Tide, Bloom + Volt, Stone + Shade) into Vaporwyrm, Thundergrove or Obsidrake. The fused Kith keeps every level, node, skill and form of both.
+- **Echo Duels.** Menu, then Echo Duel: copy your party as a code and send it to a friend; their game fights an AI-driven copy of your team. Paste theirs to fight back, or fight your own Echo.
+- **Battle feel.** Every strong skill has its element's own animation (flame pillars, waves, vines, falling slabs, a closing void), crits freeze the frame, and Tamer and boss fights open with a VS card. Options set battle speed (1×, 2×, 4×) and text speed, and AUTO lets your Kith fight for themselves until you press X.
+- **Install it.** On a phone, Add to Home Screen gives a full-screen, landscape app with its own icon that keeps working offline.
 - **Credits.** Finishing the story (and finishing the Deep) rolls credits with your own road stats, then returns you to the title with your save intact.
 
 ## Controls
@@ -67,6 +74,10 @@ It returns battles, losses, and the party's levels at each milestone, and fails 
 | `src/art.js` | Tiles, trees, buildings, people and props |
 | `src/kithart.js` | Kith sprites: vector shapes snapped to a palette, shaded and outlined |
 | `src/audio.js` | Sound effects and music |
+| `src/sky.js` | Clock, weather, night lighting, weather-aware encounters and battle boosts |
+| `src/echo.js` | Echo Duel codes: pack a party, validate and unpack a friend's |
+| `src/settings.js` | Options kept across saves |
+| `sw.js`, `manifest.webmanifest`, `icons/` | Home-screen install and offline play |
 | `src/save.js`, `src/state.js`, `src/input.js` | Save slot, shared state and tweens, input |
 
 ## Credits

@@ -41,6 +41,9 @@ export const SKILLS = {
   duskclaw: atk('Dusk Claw', 'shade', 18, 4, 'A swipe from the dark.'),
   hex: atk('Hex', 'shade', 22, 8, 'A curse that always blights.', { blight: 1 }),
   eclipse: atk('Eclipse', 'shade', 48, 14, 'Swallows the light whole.'),
+  scald: atk('Scald', 'ember', 58, 15, 'Boiling water. Often burns.', { burn: 0.5 }),
+  stormbloom: atk('Storm Bloom', 'bloom', 56, 15, 'Lightning-charged petals. Drains a third of the damage.', { drain: 0.35 }),
+  obsidian: atk('Obsidian Fang', 'stone', 60, 15, 'Volcanic glass, sharpened. Often cracks DEF.', { down: ['def', 0.6] }),
   focus: { name: 'Focus', el: 'ember', cost: 5, kind: 'buff', stat: 'atk', desc: 'Raises ATK for 3 turns.' },
   mend: { name: 'Mend', el: 'bloom', cost: 8, kind: 'heal', amt: 0.4, desc: 'Restores 40% of max HP.' },
   cleanse: { name: 'Cleanse', el: 'tide', cost: 6, kind: 'heal', amt: 0.25, cure: true, desc: 'Cures status and restores 25% HP.' },
@@ -87,6 +90,9 @@ export const SPECIES = {
   wispurr: S('Wispurr', 'shade', [34, 24, 11, 7, 12], 'phantigre', 'A cat-shaped draught. Purrs like a far-off bell.'),
   phantigre: { name: 'Phantigre', learn: 'hex' },
   nullmaw: { name: 'Nullmaw', el: 'shade', b: [180, 80, 29, 22, 15], stage: 3, raw: true, innate: ['duskclaw', 'hex', 'eclipse', 'unnerve'], blurb: 'A hole in the Lattice that learned to bite.' },
+  vaporwyrm: { name: 'Vaporwyrm', el: 'tide', b: [132, 80, 31, 24, 27], stage: 3, fusion: ['ember', 'tide'], learn: 'scald', blurb: 'Born when fire and water agreed to share one body. It never stops steaming.' },
+  thundergrove: { name: 'Thundergrove', el: 'volt', b: [120, 74, 31, 24, 31], stage: 3, fusion: ['bloom', 'volt'], learn: 'stormbloom', blurb: 'A forest that learned to call the storm. Its antlers are lightning rods.' },
+  obsidrake: { name: 'Obsidrake', el: 'shade', b: [138, 62, 33, 30, 22], stage: 3, fusion: ['stone', 'shade'], learn: 'obsidian', blurb: 'Stone that swallowed a shadow and cooled into glass.' },
   unlit: { name: 'The Unlit', el: 'shade', b: [200, 100, 30, 24, 16], stage: 3, raw: true, innate: ['eclipse', 'inferno', 'thunderhead', 'maelstrom'], blurb: 'What the Lattice looked like before anything lit it.' },
 };
 SPECIES.flarevane.to = 'solkharn';
@@ -107,6 +113,7 @@ for (const id in SPECIES) {
       prev = n; m = 2;
     }
   } else if (s.raw) s.innate = ['strike', ...s.innate];
+  else if (s.fusion) s.innate = ['strike', s.learn];
 }
 const STATS = { hp: 'HP', en: 'EN', atk: 'ATK', def: 'DEF', spd: 'SPD' };
 // Every family ascends its own way. The Ascension node is where it happens; the rite is what makes it possible.
@@ -163,6 +170,11 @@ for (const base in KIN) {
   CHARTS[base] = rows.filter((r, i) => rows.findIndex(q => q.form === r.form) === i);
 }
 export const MAX_LV = 100;
+
+// Lattice Fusion: two Kith whose elements complete each other become one.
+export const FUSE = { ember: 'vaporwyrm', tide: 'vaporwyrm', bloom: 'thundergrove', volt: 'thundergrove', stone: 'obsidrake', shade: 'obsidrake' };
+export const PARTNER = { ember: 'tide', tide: 'ember', bloom: 'volt', volt: 'bloom', stone: 'shade', shade: 'stone' };
+export const FUSE_LV = 40;
 
 export const STARTERS = ['embrit', 'puddlop', 'sprigit'];
 

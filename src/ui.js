@@ -3,6 +3,10 @@
 import { G, sleep, clamp } from './state.js';
 import { hit, rep, down } from './input.js';
 import { sfx, audio, setMuted } from './audio.js';
+import { S, saveSettings, BSPEEDS, TEXTS } from './settings.js';
+import { hudSky } from './sky.js';
+import { encodeParty, decodeParty } from './echo.js';
+import { startBattle } from './battle.js';
 import { SPECIES, SKILLS, ITEMS, EL, STARTERS, CHARTS, xpNeed, strongVs } from './data.js';
 import { statsOf, applyItem, shiftForm, chartOf, formLv, needOk, needText, tierOpen, canUnlock, formsOf, give, syncDex } from './kith.js';
 import { kithIcon } from './kithart.js';
@@ -63,7 +67,7 @@ export function uiInput() {
 
 export function uiTick(dt) {
   if (D.wait && D.n < D.full.length) {
-    D.n = Math.min(D.full.length, D.n + dt * 75);
+    D.n = Math.min(D.full.length, D.n + dt * 75 * S.text);
     dText.textContent = D.full.slice(0, D.n | 0);
     if ((D.blip += dt) > 0.07) { D.blip = 0; sfx('text'); }
     if (D.n >= D.full.length) dEl.classList.add('done');
@@ -73,7 +77,7 @@ export function uiTick(dt) {
     roll.el.style.transform = `translateY(${Math.round(roll.y)}px)`;
     if (roll.y < roll.end) { const r = roll; roll = null; r.res(); }
   }
-  if ((hudT -= dt) < 0) { hudT = 0.4; drawHud(); }
+  if ((hudT -= dt) < 0 || G.wipe > 0) { hudT = 0.4; drawHud(); }
   // An on-screen Back for whatever menu owns input, so touch players are never stuck without the X key.
   const sc = D.wait ? null : topScope();
   backEl.classList.toggle('hidden', !(sc && sc._cancel));
@@ -133,11 +137,11 @@ export const elTag = el => `<span class="el el-${el}">${EL[el].name}</span>`;
 
 function drawHud() {
   const h = $('#hud'), k = G.p && G.p.party[0];
-  const show = G.mode === 'world' && !!k;
+  const show = G.mode === 'world' && !!k && G.wipe < 0.3;
   h.classList.toggle('hidden', !show);
   if (!show) return;
   const s = statsOf(k), sparks = G.p.party.reduce((n, q) => n + q.sparks, 0);
-  h.innerHTML = `<img src="${kithIcon(k.sp, 'front', k.pr)}"><div><div class="h-top"><b>${k.name}</b><span>Lv ${k.lv}</span></div>${bar('hp', k.hp / s.hp)}</div>${sparks ? `<div class="h-spark">✦ ${sparks}<small>X: menu</small></div>` : ''}`;
+  h.innerHTML = `<img src="${kithIcon(k.sp, 'front', k.pr)}"><div><div class="h-top"><b>${k.name}</b><span>Lv ${k.lv}</span></div>${bar('hp', k.hp / s.hp)}</div><div class="h-sky">${hudSky()}</div>${sparks ? `<div class="h-spark">✦ ${sparks}<small>X: menu</small></div>` : ''}`;
 }
 
 function screen(cls, title) {
@@ -217,8 +221,8 @@ export function partyScreen(mode = 'manage', { title = 'KITH', disabled = () => 
 export function formScreen(k) {
   return new Promise(res => {
     const s = screen('forms', `${k.name.toUpperCase()} · FORM CHART`), list = s.querySelector('.s-list'), side = s.querySelector('.s-side');
-    const TIER = ['BASE', 'TIER I · Ascension I', 'TIER II · Ascension II', 'TIER III · Ascension II'];
-    const rows = () => [{ form: k.base, tier: 0, need: [] }, ...chartOf(k)];
+    const TIER = ['BASE', 'TIER I · Ascension I', 'TIER II · Ascension II', 'TIER III · Ascension II', 'FUSION'];
+    const rows = () => [{ form: k.base, tier: 0, need: [] }, ...chartOf(k), ...k.forms.filter(f => SPECIES[f].fusion).map(f => ({ form: f, tier: 4, need: [] }))];
     const draw = keep => {
       list.innerHTML = '';
       let tier = -1;
@@ -423,11 +427,80 @@ export function indexScreen() {
   });
 }
 
+// Echo Duel: copy your party as a code, or paste a friend's and fight an AI-driven copy of it.
+export function echoScreen() {
+  return new Promise(res => {
+    if (!G.p.party.length) { toast('No Kith yet.'); return res(false); }
+    const s = screen('echo', 'ECHO DUEL'), list = s.querySelector('.s-list'), side = s.querySelector('.s-side');
+    const mine = encodeParty(G.p.name || 'Tamer');
+    side.innerHTML = `<b>Your Echo</b><p class="dim">Send this to a friend. Their game fights a copy of your party exactly as it is now: levels, stats, skills.</p><textarea class="echo-code" readonly rows="5">${mine}</textarea><b>Their Echo</b><input class="echo-in" placeholder="Paste a code that starts with LB1." autocomplete="off" spellcheck="false"><p class="echo-err"></p>`;
+    const out = side.querySelector('.echo-code'), inp = side.querySelector('.echo-in'), err = side.querySelector('.echo-err');
+    const close = v => { s.remove(); res(v); };
+    const duel = async (code, own) => {
+      let e;
+      try { e = decodeParty(code); } catch (x) { sfx('deny'); err.textContent = x.message; return; }
+      close(true);
+      const r = await startBattle({ foes: e.foes, kind: 'trainer', name: own ? 'Your Echo' : `Echo of ${e.name}`, gold: 0 });
+      if (r === 'win' && !own && !G.p.flags['ec_' + e.id]) {
+        G.p.flags['ec_' + e.id] = 1;
+        const g = 40 * Math.round(e.foes.reduce((n, k) => n + k.lv, 0) / e.foes.length);
+        G.p.gold += g; toast(`First win against this Echo: ${g} G.`);
+      }
+    };
+    const items = [
+      ['Copy my code', async () => {
+        try { await navigator.clipboard.writeText(mine); toast('Echo code copied.'); }
+        catch (x) { out.focus(); out.select(); try { document.execCommand('copy'); toast('Echo code copied.'); } catch (y) { toast('Select the code and copy it.'); } }
+      }],
+      ['Paste a code', async () => {
+        try { inp.value = (await navigator.clipboard.readText()).trim(); err.textContent = ''; toast('Pasted.'); }
+        catch (x) { inp.focus(); toast('Tap the box and paste.'); }
+      }],
+      ['Duel that code', () => duel(inp.value, false)],
+      ['Duel my own Echo', () => duel(mine, true)],
+    ];
+    for (const [label, fn] of items) {
+      const b = document.createElement('button');
+      b.className = 'k-row item'; b.innerHTML = `<b>${label}</b>`;
+      b.onclick = () => { sfx('ok'); fn(); };
+      list.append(b);
+    }
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); duel(inp.value, false); } });
+    s._cancel = () => { sfx('back'); close(false); };
+  });
+}
+
+export function optionsScreen() {
+  return new Promise(res => {
+    const s = screen('options', 'OPTIONS'), list = s.querySelector('.s-list'), side = s.querySelector('.s-side');
+    const rows = [
+      ['Battle speed', () => `${S.bspeed}×`, () => { S.bspeed = BSPEEDS[(BSPEEDS.indexOf(S.bspeed) + 1) % BSPEEDS.length]; }, 'Speeds up every animation and message in battle. Grinding the Hollow Deep goes much faster at 4×.'],
+      ['Text speed', () => (TEXTS.find(t => t[0] === S.text) || TEXTS[0])[1], () => { const i = TEXTS.findIndex(t => t[0] === S.text); S.text = TEXTS[(i + 1) % TEXTS.length][0]; }, 'How fast dialogue types out.'],
+      ['Sound', () => (audio.muted ? 'Off' : 'On'), () => setMuted(!audio.muted), 'Music and sound effects.'],
+    ];
+    const draw = keep => {
+      list.innerHTML = '';
+      rows.forEach(([name, val, next, help], i) => {
+        const b = document.createElement('button');
+        b.className = 'k-row item' + (i === keep ? ' sel' : ''); b._i = i;
+        b.innerHTML = `<b>${name}</b><span>${val()}</span>`;
+        b.onclick = () => { next(); saveSettings(); sfx('ok'); draw(i); };
+        list.append(b);
+      });
+      const cur = list.querySelector('.sel') || list.firstChild;
+      cur.classList.add('sel'); s._onsel(cur);
+    };
+    s._onsel = b => { side.innerHTML = `<b>${rows[b._i][0]}</b><p>${rows[b._i][3]}</p><p class="dim">In battle, AUTO lets your Kith pick their own moves until you press X or tap the message box.</p>`; };
+    s._cancel = () => { sfx('back'); s.remove(); res(); };
+    draw(0);
+  });
+}
+
 function menuPanel() {
   return new Promise(res => {
     const m = document.createElement('div');
     m.className = 'menu scope pn';
-    const items = [['kith', 'Kith'], ['lattice', 'Lattice'], ['bag', 'Bag'], ['index', 'Index'], ['travel', 'Travel'], ['save', 'Save'], ['sound', audio.muted ? 'Sound: off' : 'Sound: on'], ['close', 'Close']];
+    const items = [['kith', 'Kith'], ['lattice', 'Lattice'], ['bag', 'Bag'], ['index', 'Index'], ['travel', 'Travel'], ['echo', 'Echo Duel'], ['options', 'Options'], ['save', 'Save'], ['close', 'Close']];
     m.innerHTML = `<div class="m-gold">${G.p.gold} G</div>`;
     for (const [id, label] of items) {
       const b = document.createElement('button');
@@ -455,10 +528,34 @@ export async function openMenu() {
       else if (c === 'index') await indexScreen();
       else if (c === 'travel') { if (await travelMenu()) return; }
       else if (c === 'save') toast(saveGame() ? 'Game saved.' : 'Could not save here.');
-      else if (c === 'sound') setMuted(!audio.muted);
+      else if (c === 'options') await optionsScreen();
+      else if (c === 'echo') { if (await echoScreen()) return; }
       else return;
     }
   } finally { G.busy--; }
+}
+
+// Two Kith spin into one.
+export async function fusionScene(a, b, to) {
+  const ov = $('#evo'), img = ov.querySelector('img'), cap = ov.querySelector('div');
+  const ia = kithIcon(a.sp, 'front', a.pr), ib = kithIcon(b.sp, 'front', b.pr);
+  ov.classList.remove('hidden');
+  cap.textContent = `${a.name} and ${b.name} reach for each other across the Lattice…`;
+  sfx('evolve');
+  for (let i = 0; i < 22; i++) {
+    img.src = i % 2 ? ib : ia;
+    img.classList.toggle('glow', i > 12 && i % 2 === 0);
+    await sleep(Math.max(0.04, 0.24 - i * 0.01));
+  }
+  ov.classList.add('flash');
+  sfx('sync');
+  await sleep(0.4);
+  img.classList.remove('glow');
+  img.src = kithIcon(to, 'front', a.pr || b.pr);
+  sfx('fanfare');
+  cap.textContent = '';
+  await sleep(0.6);
+  ov.classList.add('hidden'); ov.classList.remove('flash');
 }
 
 export async function evolveScene(k, to) {

@@ -30,6 +30,7 @@ const defs = {
       [':', 13, 0, 2, 18], [':', 5, 10, 18, 2], [':', 5, 8, 1, 2], [':', 19, 8, 1, 2], [':', 6, 16, 8, 1], [':', 15, 16, 6, 1],
       ['~', 8, 3, 4, 3], ['?f', 1, 30, 2, 2, 24, 18], ['?T', 2, 6, 2, 2, 24, 18],
       ['F', 15, 3, 9, 1], ['F', 23, 13, 1, 5], ['f', 16, 4, 8, 1], [':', 16, 14],
+      ['B', 24, 12], ['T', 25, 12], ['T', 23, 18, 1, 2], ['f', 24, 16], ['f', 25, 14],
     ],
     buildings: [
       { x: 4, y: 5, w: 4, h: 3, roof: 'red', dx: 1, door: 'home' },
@@ -40,10 +41,11 @@ const defs = {
     npcs: [
       { id: 'sable', name: 'Warden Sable', look: 'sable', x: 10, y: 15, dir: 'down', script: 'sable' },
       { id: 'way', name: 'Waygate', look: 'gate', x: 16, y: 13, script: 'waygate' },
-      { id: 'elder', name: 'Old Brannoch', look: 'elder', x: 16, y: 9, dir: 'down', script: 'talk', lines: ['Under the soil runs the Lattice, a web of light older than the vale.', 'Kith do not simply grow. They walk the Lattice, node by node. Guide yours well.'] },
+      { id: 'elder', name: 'Old Brannoch', look: 'elder', x: 16, y: 9, dir: 'down', script: 'talk', lines: ['Under the soil runs the Lattice, a web of light older than the vale.', 'Kith do not simply grow. They walk the Lattice, node by node. Guide yours well.', 'And they can clear a path. Bramble burns for Ember Kith, boulders crack for Stone, and the old pylons wake for Volt. Face it and press Z.'] },
       { id: 'kid', name: 'Tam', look: 'kid', x: 11, y: 13, dir: 'right', script: 'talk', lines: ['Wild Kith hide in the tall grass! Weaken one, then throw a Bind Seal.', 'My sister says a Kith on the Ember arm can still learn Tide skills if it walks far enough. Weird, right?'] },
       { id: 'girl', name: 'Wynn', look: 'girl', x: 21, y: 18, dir: 'left', script: 'talk', lines: ['Tide douses Ember, Ember scorches Bloom, Bloom drinks Tide.', 'Volt shocks Tide, Stone grounds Volt, and Shade... Shade is afraid of the light.'] },
     ],
+    chests: [{ id: 'h1', x: 25, y: 18, item: 'shard', n: 1 }],
     signs: [{ x: 15, y: 2, text: 'North: Mossway. Wild Kith ahead!' }, { x: 9, y: 17, text: 'Warden\'s Lab. Lattice studies in progress.' }],
     warps: [{ x: 13, y: 0, to: 'moss', tx: 14, ty: 28, dir: 'up', need: 'starter', deny: 'It isn\'t safe out there without a Kith. Warden Sable is waiting by the lab.' }, { x: 14, y: 0, to: 'moss', tx: 15, ty: 28, dir: 'up', need: 'starter', deny: 'It isn\'t safe out there without a Kith. Warden Sable is waiting by the lab.' }],
   },
@@ -56,16 +58,17 @@ const defs = {
       ['~', 20, 16, 4, 4], ['?T', 3, 16, 2, 2, 26, 26], ['?f', 4, 30, 2, 2, 26, 26],
       [':', 14, 22, 2, 8], [':', 6, 20, 10, 2], [':', 6, 12, 2, 10], [':', 6, 12, 18, 2], [':', 22, 4, 2, 10], [':', 14, 4, 10, 2], [':', 14, 0, 2, 6],
       [':', 24, 12, 4, 2], [',', 6, 15, 2, 3], [',', 18, 12, 3, 2],
-      ['#', 25, 8, 5, 4], ['O', 27, 11],
+      ['#', 25, 8, 5, 4], ['O', 27, 11], ['Z', 27, 16],
     ],
     npcs: [
+      { id: 'rv1', name: 'Corin', look: 'corin', x: 16, y: 24, dir: 'left', script: 'rival', stage: 1, sight: 2, show: 'starter', hide: 't_rv1' },
       { id: 'pip', name: 'Tamer Pip', look: 'pip', x: 10, y: 19, dir: 'down', script: 'trainer', sight: 2, trainer: { party: [['mossnip', 3], ['voltick', 4]], gold: 60, before: 'You look new! My Kith have been itching for a match.', after: 'Whoa. Spend your Sparks on the Lattice, I can tell you already have.' } },
       { id: 'rook', name: 'Tamer Rook', look: 'rook', x: 18, y: 3, dir: 'down', script: 'trainer', sight: 2, trainer: { party: [['coalcub', 5], ['murklet', 5]], gold: 90, before: 'Nobody gets to Brinecliff without getting past me.', after: 'Fine. The road\'s yours. If the rift ever clears, that is.' } },
       { id: 'juno', name: 'Tamer Juno', look: 'girl', x: 21, y: 8, dir: 'right', script: 'trainer', sight: 2, trainer: { party: [['gillby', 4], ['coalcub', 5]], gold: 80, before: 'I caught mine by the pond. Bet yours can\'t swim!', after: 'Okay, okay. The cave east of here has tougher ones, if you\'re showing off.' } },
       { id: 'rift1', name: 'Static Rift', look: 'rift', x: 14, y: 2, script: 'rift', hide: 'key1' },
       { id: 'rift2', name: 'Static Rift', look: 'rift', x: 15, y: 2, script: 'rift', hide: 'key1' },
     ],
-    chests: [{ id: 'm1', x: 3, y: 25, item: 'tonic', n: 3 }, { id: 'm2', x: 26, y: 3, item: 'seal', n: 3 }],
+    chests: [{ id: 'm1', x: 3, y: 25, item: 'tonic', n: 3 }, { id: 'm2', x: 26, y: 3, item: 'seal', n: 3 }, { id: 'm3', x: 28, y: 16, item: 'sealx', n: 3 }],
     signs: [{ x: 23, y: 11, text: 'East: Glimmer Grotto. Mind the dark.' }, { x: 16, y: 6, text: 'North: Brinecliff.' }],
     warps: [
       { x: 14, y: 29, to: 'hearth', tx: 13, ty: 1, dir: 'down' }, { x: 15, y: 29, to: 'hearth', tx: 14, ty: 1, dir: 'down' },
@@ -78,14 +81,14 @@ const defs = {
     enc: { rate: 0.09, table: [['pebblit', 5, 8, 40], ['murklet', 5, 8, 35], ['coalcub', 6, 8, 15], ['wispurr', 7, 8, 10]] },
     ops: [
       ['c', 10, 15, 4, 5], ['c', 3, 10, 18, 5], ['c', 3, 3, 4, 7], ['c', 3, 3, 10, 3], ['c', 17, 6, 4, 4], ['c', 14, 2, 6, 3],
-      ['~', 15, 11, 3, 2], ['?R', 5, 8, 4, 10, 16, 5, 'c'], ['?K', 6, 5, 3, 3, 18, 12, 'c'], ['K', 14, 2], ['K', 19, 2], ['c', 13, 3], ['c', 10, 14, 4, 1],
+      ['~', 15, 11, 3, 2], ['?R', 5, 8, 4, 10, 16, 5, 'c'], ['?K', 6, 5, 3, 3, 18, 12, 'c'], ['K', 14, 2], ['K', 19, 2], ['c', 13, 3], ['c', 10, 14, 4, 1], ['c', 22, 11], ['Q', 21, 11],
     ],
     npcs: [
       { id: 'odo', name: 'Spelunker Odo', look: 'odo', x: 8, y: 11, dir: 'right', script: 'trainer', sight: 3, trainer: { party: [['pebblit', 7], ['pebblit', 8]], gold: 120, before: 'Shh! You\'ll wake the big one. ...Actually, let\'s battle. That\'ll wake it for sure.', after: 'The thing up north isn\'t right. It flickers. Be careful.' } },
       { id: 'bex', name: 'Hunter Bex', look: 'hale', x: 5, y: 7, dir: 'left', script: 'trainer', sight: 2, trainer: { party: [['murklet', 8], ['wispurr', 8]], gold: 140, before: 'Crystals this bright draw Shade Kith like moths. And Tamers like me.', after: 'Shade folds to Volt and Ember. You worked that out fast.' } },
       { id: 'hollow', name: 'Hollowed Cragnaw', look: 'kith:cragnaw', x: 17, y: 3, dir: 'left', script: 'hollow', hide: 'key1' },
     ],
-    chests: [{ id: 'g1', x: 4, y: 4, item: 'tonic', n: 3 }, { id: 'g2', x: 19, y: 7, item: 'sealx', n: 2 }, { id: 'g3', x: 19, y: 4, item: 'shard', n: 1 }],
+    chests: [{ id: 'g1', x: 4, y: 4, item: 'tonic', n: 3 }, { id: 'g2', x: 19, y: 7, item: 'sealx', n: 2 }, { id: 'g3', x: 19, y: 4, item: 'shard', n: 1 }, { id: 'g4', x: 22, y: 11, item: 'shard', n: 2 }],
     warps: [{ x: 11, y: 19, to: 'moss', tx: 27, ty: 12, dir: 'down' }, { x: 12, y: 19, to: 'moss', tx: 27, ty: 12, dir: 'down' }],
   },
   brine: {
@@ -93,8 +96,9 @@ const defs = {
     ops: [
       ...border(28, 22), ['~', 0, 0, 28, 4], ['s', 2, 4, 24, 3], ['?f', 7, 22, 2, 7, 24, 13], ['?T', 8, 4, 2, 12, 24, 8],
       [':', 13, 10, 2, 12], [':', 4, 10, 24, 2], [':', 13, 7, 2, 3], ['=', 13, 1, 2, 3], ['=', 11, 1, 6, 1],
-      [':', 6, 17, 8, 1], [':', 6, 16, 1, 1], [':', 11, 9],
+      [':', 6, 17, 8, 1], [':', 6, 16, 1, 1], [':', 11, 9], ['s', 5, 2], ['W', 5, 3],
     ],
+    chests: [{ id: 'b1', x: 5, y: 2, item: 'rekindle', n: 2 }],
     buildings: [
       { x: 5, y: 7, w: 5, h: 3, roof: 'teal', sign: 'heal', dx: 2, door: 'mender' },
       { x: 17, y: 7, w: 5, h: 3, roof: 'gold', sign: 'shop', dx: 2, door: 'shop2' },
@@ -104,6 +108,7 @@ const defs = {
     npcs: [
       { id: 'maris', name: 'Warden Maris', look: 'maris', x: 13, y: 1, dir: 'down', script: 'maris' },
       { id: 'way', name: 'Waygate', look: 'gate', x: 11, y: 8, script: 'waygate' },
+      { id: 'rv2', name: 'Corin', look: 'corin', x: 15, y: 18, dir: 'left', script: 'rival', stage: 2, sight: 2, show: 'key1', hide: 't_rv2' },
       { id: 'breeder', name: 'Keeper Ansel', look: 'breeder', x: 10, y: 15, dir: 'left', script: 'gift' },
       { id: 'fisher', name: 'Fisher Dunn', look: 'fisher', x: 20, y: 5, dir: 'up', script: 'talk', lines: ['See that needle on the horizon? The Static Spire. It wasn\'t there last spring.', 'Kith that wander near it come back... hollow. Warden Maris is the only one who can open the gate.'] },
       { id: 'kid2', name: 'Lio', look: 'kid', x: 22, y: 12, dir: 'down', script: 'talk', lines: ['The rings between the Lattice arms are locked. You need a Key to cross them!', 'Once you cross, your Kith can learn another element\'s whole arm. My Puddlop knows Thorn now.'] },
@@ -121,7 +126,7 @@ const defs = {
       ...border(32, 22),
       [',', 3, 3, 5, 6], [',', 14, 14, 12, 5], [',', 25, 8, 5, 10], ['~', 16, 2, 4, 3], ['?T', 9, 10, 2, 2, 28, 18], ['?f', 10, 20, 2, 2, 28, 18],
       ['~', 8, 6, 6, 12], [':', 0, 10, 8, 2], ['=', 8, 10, 6, 2], [':', 14, 10, 10, 2], [',', 16, 8, 6, 6],
-      [':', 22, 4, 2, 8], [':', 22, 4, 10, 2],
+      [':', 22, 4, 2, 8], [':', 22, 4, 10, 2], ['V', 2, 15],
     ],
     npcs: [
       { id: 'wren', name: 'Tamer Wren', look: 'wren', x: 15, y: 9, dir: 'down', script: 'trainer', sight: 2, trainer: { party: [['gillby', 12], ['brinelle', 13]], gold: 180, before: 'The marsh keeps what it catches. Let\'s see if it keeps you.', after: 'You swim well for a land Tamer.' } },
@@ -130,7 +135,7 @@ const defs = {
       { id: 'gate1', name: 'Static Gate', look: 'rift', x: 30, y: 4, script: 'gate', hide: 'maris' },
       { id: 'gate2', name: 'Static Gate', look: 'rift', x: 30, y: 5, script: 'gate', hide: 'maris' },
     ],
-    chests: [{ id: 's1', x: 4, y: 17, item: 'shard', n: 1 }, { id: 's2', x: 28, y: 16, item: 'rekindle', n: 1 }, { id: 's3', x: 20, y: 6, item: 'tonicx', n: 2 }],
+    chests: [{ id: 's4', x: 1, y: 15, item: 'elixir', n: 2 }, { id: 's1', x: 4, y: 17, item: 'shard', n: 1 }, { id: 's2', x: 28, y: 16, item: 'rekindle', n: 1 }, { id: 's3', x: 20, y: 6, item: 'tonicx', n: 2 }],
     warps: [
       { x: 0, y: 10, to: 'brine', tx: 26, ty: 10, dir: 'left' }, { x: 0, y: 11, to: 'brine', tx: 26, ty: 11, dir: 'left' },
       { x: 31, y: 4, to: 'cinder', tx: 1, ty: 10, dir: 'right' }, { x: 31, y: 5, to: 'cinder', tx: 1, ty: 11, dir: 'right' },
@@ -147,6 +152,7 @@ const defs = {
       { id: 'aco1', name: 'Null Acolyte', look: 'acolyte', x: 4, y: 9, dir: 'down', script: 'trainer', sight: 3, trainer: { party: [['noxwing', 28], ['cragnaw', 29]], gold: 500, before: 'The Lattice is a cage. We are only opening the door.', after: 'It... it doesn\'t matter. The Maw is already awake.' } },
       { id: 'aco2', name: 'Null Acolyte', look: 'acolyte', x: 17, y: 9, dir: 'down', script: 'trainer', sight: 3, trainer: { party: [['phantigre', 29], ['magmander', 29]], gold: 500, before: 'No further, Tamer. Your Kith will thank us when they are free.', after: 'Free... of what? I can\'t remember what we wanted.' } },
       { id: 'aco3', name: 'Null Adept', look: 'acolyte', x: 9, y: 5, dir: 'right', script: 'trainer', sight: 2, trainer: { party: [['stagvolt', 30], ['noxwing', 30], ['phantigre', 31]], gold: 700, before: 'The Maw is hungry and you are in its doorway.', after: 'Then go in. See what a hole in the world looks like.' } },
+      { id: 'rv4', name: 'Corin', look: 'corin', x: 12, y: 5, dir: 'left', script: 'rival', stage: 4, sight: 2, show: 'yuna', hide: 't_rv4' },
       { id: 'font', name: 'Lattice Font', look: 'font', x: 15, y: 17, script: 'font' },
       { id: 'null', name: 'Nullmaw', look: 'kith:nullmaw', x: 10, y: 2, dir: 'down', script: 'nullmaw', hide: 'clear' },
     ],
@@ -157,8 +163,9 @@ const defs = {
     name: 'Cindermere', w: 28, h: 22, base: '.', theme: 'ash', edge: 'T', music: 'town', bg: 'ash', town: [10, 10],
     ops: [
       ...border(28, 22), ['L', 15, 14, 9, 5], ['?f', 21, 16, 2, 2, 24, 18], ['?T', 22, 5, 2, 2, 24, 18], ['?R', 23, 6, 2, 12, 12, 8],
-      [':', 0, 10, 24, 2], [':', 6, 9], [':', 14, 9], [':', 18, 9], [':', 22, 0, 2, 12], [':', 8, 12, 2, 4],
+      [':', 0, 10, 24, 2], [':', 6, 9], [':', 14, 9], [':', 18, 9], [':', 22, 0, 2, 12], [':', 8, 12, 2, 4], ['J', 25, 18],
     ],
+    chests: [{ id: 'c1', x: 26, y: 18, item: 'etherx', n: 2 }],
     buildings: [
       { x: 4, y: 6, w: 5, h: 3, roof: 'teal', sign: 'heal', dx: 2, door: 'mender' },
       { x: 12, y: 6, w: 5, h: 3, roof: 'gold', sign: 'shop', dx: 2, door: 'shop3' },
@@ -186,10 +193,12 @@ const defs = {
       [',', 16, 22, 8, 5], [',', 2, 13, 4, 6], [',', 10, 3, 10, 5], [',', 24, 8, 4, 10], ['L', 17, 13, 4, 6], ['L', 9, 14, 4, 4],
       ['?T', 31, 14, 2, 2, 26, 26], ['?R', 32, 12, 2, 2, 26, 26], ['?f', 33, 20, 2, 2, 26, 26],
       [':', 14, 20, 2, 10], [':', 14, 20, 10, 2], [':', 22, 10, 2, 12], [':', 6, 10, 18, 2], [':', 6, 0, 2, 12],
-      [',', 18, 20, 3, 2], [',', 12, 10, 4, 2],
+      [',', 18, 20, 3, 2], [',', 12, 10, 4, 2], ['Q', 27, 15],
     ],
     npcs: [
+      { id: 'rv3', name: 'Corin', look: 'corin', x: 16, y: 25, dir: 'left', script: 'rival', stage: 3, sight: 2, show: 'kael', hide: 't_rv3' },
       { id: 'brask', name: 'Tamer Brask', look: 'rook', x: 21, y: 15, dir: 'right', script: 'trainer', sight: 2, trainer: { party: [['magmander', 22], ['cragnaw', 23]], gold: 320, before: 'The pass burns the weak ones off. Let\'s see which you are.', after: 'Not weak. Noted.' } },
+      { id: 'lg1', name: 'Crowned Magmander', look: 'kith:magmander', x: 28, y: 15, dir: 'left', script: 'legend', hide: 'lg_lg1', legend: { sp: 'magmander', lv: 27, pr: true, line: 'A Magmander sits in the rock like a king on a throne, scales shifting colours in the heat.' } },
       { id: 'isolde', name: 'Tamer Isolde', look: 'wren', x: 8, y: 6, dir: 'left', script: 'trainer', sight: 2, trainer: { party: [['noxwing', 23], ['magmander', 24], ['phantigre', 24]], gold: 380, before: 'Galehaven is close. So am I. Unlucky.', after: 'The snow up there will feel kind after this.' } },
     ],
     chests: [{ id: 'a1', x: 26, y: 26, item: 'tonicx', n: 3 }, { id: 'a2', x: 3, y: 10, item: 'shard', n: 1 }, { id: 'a3', x: 26, y: 4, item: 'sealx', n: 2 }],
@@ -203,7 +212,7 @@ const defs = {
     name: 'Galehaven', w: 28, h: 22, base: '.', theme: 'snow', edge: 'T', music: 'town', bg: 'snow', town: [13, 12],
     ops: [
       ...border(28, 22), ['~', 20, 2, 5, 3], ['?T', 41, 6, 2, 12, 24, 8], ['?f', 42, 14, 2, 2, 24, 18],
-      [':', 13, 10, 2, 12], [':', 4, 10, 20, 2], [':', 6, 9], [':', 19, 9], [':', 16, 9], [':', 13, 0, 2, 10], [':', 9, 4, 4, 2],
+      [':', 13, 10, 2, 12], [':', 4, 10, 20, 2], [':', 6, 9], [':', 19, 9], [':', 16, 9], [':', 13, 0, 2, 10], [':', 9, 4, 4, 2], ['W', 22, 4],
     ],
     buildings: [
       { x: 4, y: 6, w: 5, h: 3, roof: 'teal', sign: 'heal', dx: 2, door: 'mender' },
@@ -216,6 +225,8 @@ const defs = {
       { id: 'way', name: 'Waygate', look: 'gate', x: 16, y: 8, script: 'waygate' },
       { id: 'gate3', name: 'Static Gate', look: 'rift', x: 13, y: 2, script: 'gate2', hide: 'yuna' },
       { id: 'gate4', name: 'Static Gate', look: 'rift', x: 14, y: 2, script: 'gate2', hide: 'yuna' },
+      { id: 'lg2', name: 'Lake Maelorca', look: 'kith:maelorca', x: 22, y: 3, dir: 'down', script: 'legend', hide: 'lg_lg2', legend: { sp: 'maelorca', lv: 34, line: 'The lake was never frozen. Something huge and warm has been circling under the ice.' } },
+      { id: 'rv5', name: 'Corin', look: 'corin', x: 16, y: 13, dir: 'down', script: 'rival', stage: 5, sight: 0, show: 'clear' },
       { id: 'scout', name: 'Scout Ferro', look: 'scout', x: 10, y: 13, dir: 'right', script: 'talk', lines: ['The Spire is one ridge north. On clear nights you can see the Lattice bend toward it.', 'They say there is a stair under the Spire that goes down further than the tower goes up. Nobody has found the bottom.'] },
       { id: 'kid4', name: 'Miri', look: 'kid', x: 21, y: 12, dir: 'down', script: 'talk', lines: ['My Voltick ascended when it got fast enough! My brother\'s Murklet needed ten wins first.', 'Kith can reach Lv 100. I counted the Lattice once. There are enough nodes for almost all of it.'] },
     ],

@@ -1,9 +1,9 @@
 // NPC, door and boss scripts. Each runs with world input locked.
 import { G, flag, setFlag, wipe, sleep } from './state.js';
-import { SPECIES, ITEMS, STARTERS, EL } from './data.js';
-import { makeKith, healAll, give, addKith, statsOf } from './kith.js';
+import { SPECIES, SKILLS, ITEMS, STARTERS, EL, FUSE, PARTNER, FUSE_LV } from './data.js';
+import { makeKith, healAll, give, addKith, statsOf, rootOf, fuse } from './kith.js';
 import { sfx } from './audio.js';
-import { say, choose, toast, starterSelect, shopScreen, ending } from './ui.js';
+import { say, choose, toast, starterSelect, shopScreen, ending, partyScreen, fusionScene } from './ui.js';
 import { startBattle } from './battle.js';
 import { W } from './world.js';
 import { travelMenu } from './ui.js';
@@ -57,7 +57,51 @@ async function rematch(n) {
   return true;
 }
 
+// Corin, the rival: always takes the starter yours is weakest against, and keeps coming back stronger.
+const COUNTER = { embrit: 'puddlop', puddlop: 'sprigit', sprigit: 'embrit' };
+function rivalTeam(stage) {
+  const mine = G.p.starter || (STARTERS.includes(rootOf(G.p.party[0] ? G.p.party[0].sp : 'embrit')) ? rootOf(G.p.party[0].sp) : 'embrit');
+  const c0 = COUNTER[mine] || 'puddlop', c1 = SPECIES[c0].to, c2 = SPECIES[c1].to;
+  if (stage === 1) return [[c0, 4]];
+  if (stage === 2) return [['noxwing', 15], ['stagvolt', 15], [c1, 17]];
+  if (stage === 3) return [['magmander', 24], ['phantigre', 24], [c1, 26]];
+  if (stage === 4) return [['cragnaw', 31], ['phantigre', 31], ['stagvolt', 32], [c2, 34]];
+  const top = Math.max(...[...G.p.party, ...G.p.reserve].map(k => k.lv)), L = Math.max(60, Math.min(100, top));
+  return [['eldergrove', L - 2], ['maelorca', L - 2], ['solkharn', L - 1], [c2, L]];
+}
+const RIVAL = {
+  1: ['So you\'re the one Sable picked. I\'m Corin. I took the Kith yours is weakest against. On purpose. It hasn\'t learned a skill yet, but it doesn\'t need one.', '...Lucky. Next time the matchup won\'t save you.'],
+  2: ['Key I already? I\'ve been reading the Lattice too. My partner ascended last week. Watch.', 'You keep winning in a way I don\'t understand. The Lattice isn\'t that simple. Is it?'],
+  3: ['The Wardens let you through. Of course they did. Kael told me to try forms other than the obvious one. I did.', 'Fine. Go up to Galehaven. I\'ll be at the Spire before you.'],
+  4: ['I got here first. I always get here first. And I still can\'t open that door. ...So let\'s see who walks in.', 'Go on. It\'s yours. Here, my Kith can spare some light for yours.'],
+};
+async function rival(n) {
+  const who = n.name, st = n.stage;
+  if (st === 5) {
+    await say(flag('rv5') ? 'Again? Good. I\'ve been in the Deep too. Let\'s see who\'s grown more.' : 'You actually did it. The Nullmaw\'s gone. ...I want a real rematch. No holding back.', who);
+    if ((await choose(['Battle', 'Not now'], { prompt: 'Corin\'s team matches your strongest Kith.', name: who })) !== 0) return;
+  } else await say(RIVAL[st][0], who);
+  const foes = rivalTeam(st).map(([sp, lv], i, a) => {
+    const k = makeKith(sp, lv);
+    if (st === 1) k.skills = []; // a fresh partner that hasn't learned a skill yet
+    if (i === a.length - 1 && st >= 4) { k.boss = st === 5 ? 1.8 : 1.3; k.hp = statsOf(k).hp; if (st === 5) k.traits = { enrage: 0.4 }; }
+    return k;
+  });
+  const r = await startBattle({ foes, kind: 'trainer', name: who, gold: [0, 150, 500, 900, 1600, 4000][st] });
+  if (r !== 'win') return;
+  if (st < 5) {
+    setFlag('t_' + n.id);
+    await say(RIVAL[st][1], who);
+    if (st === 4) { healAll(); sfx('heal'); await say('Your Kith are restored.'); }
+  } else {
+    await say(flag('rv5') ? 'Still you. Fine. FINE. Same time next week.' : 'Okay. You\'re better than me. For now. Take these, I\'ll earn them back.', who);
+    if (!flag('rv5')) { setFlag('rv5'); await gift('shard', 5, who); }
+  }
+  saveGame();
+}
+
 const SCRIPTS = {
+  rival,
   async talk(n) { for (const line of n.lines) await say(line, n.name); },
 
   async sable(n) {
@@ -67,6 +111,7 @@ const SCRIPTS = {
       await say('Every Kith grows by walking it: a web of nodes, shared by all of them. Each level earns a Spark, and each Spark lights one node.', who);
       await say('Three young Kith are ready for a Tamer. Choose the one that feels right.', who);
       const sp = await starterSelect();
+      G.p.starter = sp;
       const k = makeKith(sp, 3);
       k.sparks = 2;
       addKith(k);
@@ -84,6 +129,7 @@ const SCRIPTS = {
     if (flag('unlit')) return say('You went all the way down. I have studied the Lattice for forty years and I do not know what you are any more. Thank you.', who);
     if (flag('clear')) return say('The hum is clean again, but the Spire has a stair now, going down. The Hollow Deep. Whatever fed the Nullmaw is at the bottom, and it will take Kith near Lv 100 to face it.', who);
     if (flag('yuna')) return say('Four Wardens, four Waygates. The Spire is all that is left. Finish it.', who);
+    if (flag('maris') && !flag('ilse')) return say('Key II opens more than locks. Ilse in my lab has been waiting for a Tamer with it. Go and see her.', who);
     if (flag('maris')) return say('Key II opens the deep locks, and past them the last skills and the second Ascension. East of Saltmarsh lie Cindermere and Galehaven. Their Wardens guard the road to the Spire.', who);
     if (flag('key1')) return say('Lattice Key I! Take it to a ring lock between two arms. Cross it and your Kith can learn another element entirely. Brinecliff lies north.', who);
     const sparks = G.p.party.reduce((s, k) => s + k.sparks, 0);
@@ -96,7 +142,28 @@ const SCRIPTS = {
     await rest('All mended. Walk the Lattice well.');
   },
   async home() { await rest('You rest a while at home. Your Kith look refreshed.'); },
-  async lab() { await say('The lab door is propped open. Charts of the Lattice cover every wall, six arms meeting at one bright Heart.'); },
+  async lab() {
+    const who = 'Researcher Ilse';
+    if (!flag('maris')) return say('The lab door is propped open. Charts of the Lattice cover every wall, six arms meeting at one bright Heart.');
+    if (!flag('ilse')) {
+      setFlag('ilse');
+      await say('Oh! Sable\'s Tamer. You have Key II? Then you\'ve seen the deep locks. Here is what Sable won\'t tell you.', who);
+      await say('Two Kith whose elements complete each other can be fused on the Lattice: Ember with Tide, Bloom with Volt, Stone with Shade. Both must be Lv 40 or more.', who);
+      await say('The pair becomes one Kith that keeps everything both of them learned: levels, nodes, skills, forms. The second one is gone for good. Choose carefully.', who);
+    }
+    if ((await choose(['Fuse two Kith', 'Not today'], { prompt: 'Use the Fusion Lattice?', name: who })) !== 0) return;
+    const ok = k => k.lv >= FUSE_LV && !SPECIES[k.sp].fusion && !SPECIES[k.sp].raw;
+    const first = await partyScreen('pick', { title: `FUSE: FIRST KITH (LV ${FUSE_LV}+)`, disabled: k => !ok(k) });
+    if (!first) return;
+    const need = PARTNER[SPECIES[first.sp].el], to = FUSE[need];
+    const second = await partyScreen('pick', { title: `FUSE WITH A ${EL[need].name.toUpperCase()} KITH`, disabled: k => k === first || !ok(k) || SPECIES[k.sp].el !== need });
+    if (!second) return say(`It has to be a ${EL[need].name} Kith of Lv ${FUSE_LV} or more, in the party.`, who);
+    if ((await choose(['Fuse them', 'Cancel'], { prompt: `${first.name} and ${second.name} will become ${SPECIES[to].name}. ${second.name} will be gone for good.`, name: who })) !== 0) return;
+    await fusionScene(first, second, to);
+    fuse(first, second, to);
+    await say(`${first.name} is a ${SPECIES[to].name} now, and it knows ${SKILLS[SPECIES[to].learn].name}! Every node both of them lit is still lit.`, who);
+    saveGame();
+  },
   async locked() { await say('Nobody seems to be home.'); },
   async shop1() { await say('Fresh stock, fair prices.', 'Trader'); await shopScreen(['tonic', 'ether', 'seal', 'rekindle']); },
   async shop2() { await say('Brinecliff\'s finest. The Spark Shards came in on the last tide.', 'Trader'); await shopScreen(['tonic', 'tonicx', 'ether', 'seal', 'sealx', 'rekindle', 'shard']); },
@@ -167,6 +234,18 @@ const SCRIPTS = {
     setFlag('unlit');
     await say('The Unlit comes apart like frost in the sun. Under it, the oldest node in the world catches, and burns steady.');
     await ending(true);
+  },
+
+  async legend(n) {
+    const L = n.legend;
+    await say(L.line);
+    if ((await choose(['Approach', 'Leave it be'], { prompt: `${n.name} has noticed you.` })) !== 0) return;
+    const k = makeKith(L.sp, L.lv);
+    if (L.pr) k.pr = true;
+    k.name = SPECIES[L.sp].name;
+    k.hp = statsOf(k).hp; k.en = statsOf(k).en;
+    const r = await startBattle({ foes: [k], kind: 'wild', name: n.name });
+    if (r === 'win' || r === 'bind') { setFlag(n.hide); saveGame(); if (r === 'win') await say('It sinks back into the world and is gone. Perhaps a Seal would have kept it.'); }
   },
 
   async rift() { await say('A wall of static crackles across the road. It tastes of the Grotto. Whatever feeds it is still in there.'); },

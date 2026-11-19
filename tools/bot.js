@@ -6,6 +6,7 @@ import * as I from '../src/input.js';
 import { W, warpTo } from '../src/world.js';
 import { MAPS, GUARDIANS, DEEP_FLOORS, deepLevel } from '../src/maps.js';
 import { waypoints } from '../src/ui.js';
+import { hasSave } from '../src/save.js';
 import * as K from '../src/kith.js';
 import { NODES, ADJ } from '../src/grid.js';
 import { SKILLS, SPECIES, ELS, effect } from '../src/data.js';
@@ -16,6 +17,8 @@ let wake = null;
 ch.port1.onmessage = () => { const w = wake; wake = null; if (w) w(); };
 const pause = () => new Promise(r => { wake = r; ch.port2.postMessage(0); });
 const tick = async (t = 0.1) => { window.__tick(t); await pause(); };
+// Keep the game clock moving while waiting on something that runs on game time (a warp's screen wipe).
+const during = async p => { let done = false; p.then(() => { done = true; }); while (!done) await tick(0.05); return p; };
 const $ = s => document.querySelector(s);
 const vis = el => !!el && !el.closest('.hidden');
 const flag = k => !!G.p.flags[k];
@@ -206,7 +209,7 @@ async function travel(target) {
     const pts = waypoints(), here = CHAIN.indexOf(W.map.id), goal = CHAIN.indexOf(target === 'grotto' ? 'moss' : target);
     if (pts.length > 1 && here >= 0) {
       const best = pts.map(p => ({ p, d: Math.abs(CHAIN.indexOf(p.map) - goal) })).sort((a, b) => a.d - b.d)[0];
-      if (best.d + 1 < Math.abs(here - goal)) { stats.warps++; await warpTo(best.p.map, best.p.x, best.p.y, 'down'); continue; }
+      if (best.d + 1 < Math.abs(here - goal)) { stats.warps++; await during(warpTo(best.p.map, best.p.x, best.p.y, 'down')); continue; }
     }
     const next = hop(W.map.id, target), w = W.map.warps.find(q => q.to === next);
     await walkTo(w.x, w.y);
@@ -246,7 +249,7 @@ async function chests(map) {
     for (const d in DV) {
       const x = c.x - DV[d][0], y = c.y - DV[d][1];
       if (blocked(x, y, [x, y])) continue;
-      await useAt(map, x, y, d);
+      try { await useAt(map, x, y, d); } catch (e) { if (!/no path/.test(e.message)) throw e; } // sealed behind a field obstacle
       break;
     }
   }
@@ -314,6 +317,7 @@ export async function play(pick = 'embrit', through = 'story') {
   stats.status = 'running'; stats.warps = stats.warps || 0;
   const t0 = performance.now();
   try {
+    if (G.mode === 'title' && G.p === null && hasSave()) { $('#btn-continue').click(); await tick(0.5); }
     if (!G.p || !flag('clear')) await story();
     if (through === 'deep') await deep();
     stats.status = 'finished';

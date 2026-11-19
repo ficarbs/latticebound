@@ -24,6 +24,8 @@ export function initInput() {
   addEventListener('keydown', e => {
     const a = KEYS[e.code];
     if (!a || e.metaKey || e.ctrlKey) return;
+    // Let text fields (Echo codes) type normally.
+    if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) { if (e.code !== 'Escape') return; e.target.blur(); }
     e.preventDefault();
     press(a);
   });

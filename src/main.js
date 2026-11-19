@@ -2,6 +2,7 @@
 import { G, updateTweens, wipe, newPlayer } from './state.js';
 import { initInput, tickInput, endFrame, setVirtual } from './input.js';
 import { initAudio, music } from './audio.js';
+import { S } from './settings.js';
 import { initUI, uiInput, uiTick, uiActive, showTitle, $ } from './ui.js';
 import { loadMap, worldUpdate, drawWorld } from './world.js';
 import { battleUpdate, drawBattle } from './battle.js';
@@ -81,9 +82,12 @@ function step(dt) {
 }
 let last = performance.now();
 function frame(now) {
+  if (window.__paused) { last = now; return requestAnimationFrame(frame); }
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
-  step(dt);
+  // Battle speed: run battle frames on a faster clock, in sub-steps so tweens stay smooth.
+  const k = G.mode === 'battle' ? S.bspeed : 1;
+  for (let i = 0; i < k; i++) step(dt);
   requestAnimationFrame(frame);
 }
 // Steps the game by hand, so it can be driven while the tab is hidden.
@@ -151,5 +155,7 @@ if (location.search.includes('gallery')) { G.mode = 'gallery'; G.wipe = 0; $('#t
   title();
   wipe(0, 0.6);
 }
+// Installable and playable offline (served over https or localhost only).
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});
 addEventListener('beforeunload', () => { if (G.p && G.mode === 'world' && !G.busy) saveGame(); });
 requestAnimationFrame(frame);

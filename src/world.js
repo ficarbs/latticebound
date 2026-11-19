@@ -1,16 +1,17 @@
 // Overworld: tile movement, camera, NPCs, warps, encounters and rendering.
-import { G, flag, setFlag, wipe, sleep, rint } from './state.js';
+import { G, flag, setFlag, wipe, sleep, rint, tween, ease } from './state.js';
 import { hit, dir } from './input.js';
 import { MAPS } from './maps.js';
-import { drawGround, treeSprite, buildingSprite, charSprite, chestSprite, signSprite, bangSprite, tallOverlay, hash, SOLID, mk, px, ell } from './art.js';
+import { drawGround, treeSprite, buildingSprite, charSprite, chestSprite, signSprite, bangSprite, tallOverlay, hash, SOLID, FIELD, mk, px, ell } from './art.js';
 import { kithSprite } from './kithart.js';
 import { SPECIES, ITEMS } from './data.js';
 import { makeKith, healAll, give, statsOf } from './kith.js';
 import { sfx, music } from './audio.js';
-import { say, banner, openMenu, toast } from './ui.js';
+import { say, choose, banner, openMenu, toast } from './ui.js';
 import { startBattle } from './battle.js';
 import { runScript } from './story.js';
 import { saveGame } from './save.js';
+import { drawSky, encWeight } from './sky.js';
 
 const MOVE = 0.17, VW = 320, VH = 180;
 const DV = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
@@ -24,10 +25,20 @@ export const W = {
 const grounds = {};
 let dark;
 
+// Field obstacles: remember where each map's were, and lay the map out with the cleared ones gone.
+const floorOf = m => (m.theme === 'cave' ? 'c' : m.theme === 'spire' ? 'p' : '.');
+function applyField(m) {
+  if (!m.field) { m.field = []; m.t.forEach((row, y) => row.forEach((ch, x) => { if (FIELD[ch]) m.field.push({ x, y, ch }); })); }
+  let key = '';
+  for (const f of m.field) { const gone = flag(`f_${m.id}_${f.x}_${f.y}`); m.t[f.y][f.x] = gone ? (f.ch === 'W' ? '=' : floorOf(m)) : f.ch; key += gone ? 1 : 0; }
+  return m.id + key;
+}
+
 export function loadMap(id, x, y, d = 'down') {
   const m = MAPS[id], p = W.pl;
   W.map = m;
-  W.ground = grounds[id] || (grounds[id] = drawGround(m));
+  const gk = applyField(m);
+  W.ground = grounds[gk] || (grounds[gk] = drawGround(m));
   W.statics = [];
   for (let ty = 0; ty < m.h; ty++) for (let tx = 0; tx < m.w; tx++) {
     if (m.t[ty][tx] === 'T') W.statics.push({ spr: treeSprite((hash(tx, ty, 3) * 3) | 0, m.theme), x: tx * 16 - 3, y: ty * 16 - 13, sy: ty * 16 + 15 });
@@ -77,9 +88,9 @@ export function blackout() {
 }
 
 async function wildBattle() {
-  const m = W.map, total = m.enc.table.reduce((n, e) => n + e[3], 0);
+  const m = W.map, rows = m.enc.table.map(e => [e, encWeight(m, e[0], e[3])]), total = rows.reduce((n, r) => n + r[1], 0);
   let r = Math.random() * total, e = m.enc.table[0];
-  for (const row of m.enc.table) { if ((r -= row[3]) < 0) { e = row; break; } }
+  for (const [row, w] of rows) { if ((r -= w) < 0) { e = row; break; } }
   const k = makeKith(e[0], rint(e[1], e[2]));
   // Rare prismatic Kith: other colours, a tenth stronger, worth a Seal.
   if (Math.random() < (flag('clear') ? 1 / 24 : 1 / 40) * (G.p.bag.charm ? 4 : 1)) { k.pr = true; const s = statsOf(k); k.hp = s.hp; k.en = s.en; }
@@ -112,9 +123,19 @@ async function arrive() {
         W.emote = { x: n.x, y: n.y, t: 0.7 };
         sfx('encounter');
         await sleep(0.7);
+        // they walk up until they're face to face
+        const x0 = n.x, y0 = n.y;
+        for (let s = 1; s < i; s++) {
+          n.walking = true;
+          await Promise.all([tween(n, 'ox', dx * 16, 0.2, ease.lin), tween(n, 'oy', dy * 16, 0.2, ease.lin)]);
+          n.x += dx; n.y += dy; n.ox = 0; n.oy = 0;
+        }
+        n.walking = false;
         p.dir = OPP[n.dir];
         G.busy--;
-        return runScript(n.script, n);
+        await runScript(n.script, n);
+        n.x = x0; n.y = y0;
+        return;
       }
       if (!canWalk(n.x + dx * i, n.y + dy * i)) break;
     }
@@ -151,12 +172,36 @@ async function interact() {
     return;
   }
   const s = m.signs.find(q => q.x === x && q.y === y);
-  if (s) { G.busy++; await say(s.text); G.busy--; }
+  if (s) { G.busy++; await say(s.text); G.busy--; return; }
+  const ob = FIELD[tileAt(x, y)];
+  if (ob) return clearField(x, y, ob);
+}
+
+async function clearField(x, y, ob) {
+  G.busy++;
+  try {
+    const k = G.p.party.find(q => q.hp > 0 && SPECIES[q.sp].el === ob.el);
+    if (!k) { await say(ob.hint); return; }
+    if ((await choose([`Ask ${k.name}`, 'Leave it'], { prompt: ob.hint })) !== 0) return;
+    const cols = { ember: ['#ffd84a', '#ff8a3c'], stone: ['#d8dce6', '#8d93a0'], volt: ['#ffffff', '#f6d743'], tide: ['#d0f4ff', '#4aa8f0'], bloom: ['#c8f58a', '#4fa85a'], shade: ['#c58af0', '#4c3792'] }[ob.el];
+    sfx(ob.el === 'stone' ? 'crit' : ob.el === 'volt' ? 'sync' : 'cast');
+    for (let i = 0; i < 4; i++) {
+      for (let j = 0; j < 8; j++) W.parts.push({ x: x * 16 + 8, y: y * 16 + 8, vx: (Math.random() - 0.5) * 90, vy: -30 - Math.random() * 60, life: 0.5, col: cols[j % 2] });
+      await sleep(0.1);
+    }
+    setFlag(`f_${W.map.id}_${x}_${y}`);
+    const gk = applyField(W.map);
+    W.ground = grounds[gk] || (grounds[gk] = drawGround(W.map));
+    sfx('item');
+    await say(`${k.name} ${ob.verb}!`);
+    saveGame();
+  } finally { G.busy--; }
 }
 
 export function worldUpdate(dt, locked) {
   const p = W.pl;
   G.p.time += dt;
+  G.p.clock = ((G.p.clock ?? 480) + dt) % 1440;
   W.bumpT -= dt;
   if (W.emote && (W.emote.t -= dt) <= 0) W.emote = null;
   for (let i = W.parts.length - 1; i >= 0; i--) {
@@ -224,11 +269,11 @@ export function drawWorld(g) {
   for (const c of m.chests) list.push({ spr: chestSprite(), x: c.x * 16, y: c.y * 16 + 1, sy: c.y * 16 + 15, dim: flag('c_' + c.id) });
   for (const n of m.npcs) {
     if (!visible(n)) continue;
-    const o = { x: n.x * 16, y: n.y * 16, sy: n.y * 16 + 15, npc: n };
+    const o = { x: n.x * 16 + (n.ox || 0), y: n.y * 16 + (n.oy || 0), sy: n.y * 16 + 15 + (n.oy || 0), npc: n };
     if (n.look.startsWith('kith:')) {
       const big = n.look === 'kith:nullmaw' ? 40 : 30;
       o.spr = kithSprite(n.look.slice(5), big, false, false, 'front'); o.x += 8 - big / 2; o.y += 15 - big + Math.round(Math.sin(t * 2.5));
-    } else if (n.look !== 'rift' && n.look !== 'font' && n.look !== 'gate') { o.spr = charSprite(n.look, n.dir, 0); o.x -= 1; o.y -= 6; }
+    } else if (n.look !== 'rift' && n.look !== 'font' && n.look !== 'gate') { o.spr = charSprite(n.look, n.dir, n.walking ? [1, 0, 2, 0][((G.t * 10) | 0) % 4] : 0); o.x -= 1; o.y -= 6; }
     list.push(o);
   }
   const lead = G.p.party[0];
@@ -266,6 +311,16 @@ export function drawWorld(g) {
     for (const [r, a] of [[76, 0.3], [60, 0.45], [42, 1]]) { d.fillStyle = `rgba(0,0,0,${a})`; d.beginPath(); d.arc(lx, ly, r + fl, 0, 7); d.fill(); }
     g.drawImage(dark, 0, 0);
   }
+  // lights for the night sky: lit windows, the Waygate, fonts, lava, and a lantern on the player
+  const lights = [[Math.round(ppx - cx) + 8, Math.round(ppy - cy) + 6, 46, 'rgba(255,220,150,0.25)']];
+  for (const b of m.buildings) for (let col = 0; col < b.w; col++) {
+    if (col === b.dx || b.door === 'locked' && (col + b.x) % 2) continue;
+    const wx = b.x * 16 + col * 16 + 8 - cx, wy = b.y * 16 + b.h * 16 - 11 - cy;
+    if (wx > -30 && wx < 350 && wy > -30 && wy < 210) lights.push([wx, wy + 8, 26, 'rgba(255,200,110,0.55)']);
+  }
+  for (const n of m.npcs) if ((n.look === 'gate' || n.look === 'font') && visible(n)) lights.push([n.x * 16 + 8 - cx, n.y * 16 - cy, 40, 'rgba(90,240,230,0.45)']);
+  if (m.theme === 'ash') for (let ty = Math.max(0, (cy / 16) | 0); ty < Math.min(m.h, ((cy + VH) / 16 | 0) + 1); ty++) for (let tx = Math.max(0, (cx / 16) | 0); tx < Math.min(m.w, ((cx + VW) / 16 | 0) + 1); tx++) if (m.t[ty][tx] === 'L' && (tx + ty) % 2 === 0) lights.push([tx * 16 + 8 - cx, ty * 16 + 8 - cy, 34, 'rgba(255,120,40,0.4)']);
+  drawSky(g, m, t, cx, cy, lights);
   // ambient motes
   const amb = m.theme === 'cave' ? '#9ff5ee' : m.theme === 'spire' ? '#ff4a9a' : null;
   if (amb) for (let i = 0; i < 14; i++) {

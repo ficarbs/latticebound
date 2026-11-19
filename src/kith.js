@@ -125,6 +125,26 @@ export function healAll() {
   for (const k of [...G.p.party, ...G.p.reserve]) { const s = statsOf(k); k.hp = s.hp; k.en = s.en; }
 }
 
+// Lattice Fusion: `a` absorbs `b` and becomes the fusion form. Levels, nodes, Sparks, skills and forms all carry over.
+export function fuse(a, b, to) {
+  formsOf(a); formsOf(b);
+  a.lv = Math.max(a.lv, b.lv); a.xp = 0;
+  a.nodes = [...new Set([...a.nodes, ...b.nodes])];
+  a.sparks += b.sparks;
+  for (const id of b.known) learn(a, id);
+  for (const f of b.forms) if (!a.forms.includes(f)) a.forms.push(f);
+  for (const f in b.fw) a.fw[f] = (a.fw[f] || 0) + b.fw[f];
+  a.wins = (a.wins || 0) + (b.wins || 0); a.bursts = (a.bursts || 0) + (b.bursts || 0);
+  a.pr = a.pr || b.pr;
+  a.fused = [a.sp, b.sp];
+  for (const list of [G.p.party, G.p.reserve]) { const i = list.indexOf(b); if (i >= 0) list.splice(i, 1); }
+  shiftForm(a, to);
+  const sig = SPECIES[to].learn;
+  if (!a.skills.includes(sig)) a.skills[Math.min(3, a.skills.length)] = sig; // the fusion's signature always comes equipped
+  const s = statsOf(a); a.hp = s.hp; a.en = s.en;
+  return a;
+}
+
 // The Index: 1 = met in battle, 2 = a form one of your Kith has worn.
 export function dexMark(sp, n) { const d = G.p.dex || (G.p.dex = {}); if ((d[sp] || 0) < n) d[sp] = n; }
 export function syncDex() { for (const k of [...G.p.party, ...G.p.reserve]) for (const f of formsOf(k)) dexMark(f, 2); }
